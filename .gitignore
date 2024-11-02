@@ -1,0 +1,7 @@
+fpga/
+script/
+testcase/
+testspace/
+Makefile
+*.drawio
+*.bkp
