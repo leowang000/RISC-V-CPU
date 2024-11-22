@@ -23,7 +23,7 @@
 `define ALU_GEU `ALU_OP_WIDTH'd13
 
 // ROB
-`define ROB_SIZE 32
+`define ROB_SIZE 32 // capacity = 31
 `define ROB_SIZE_WIDTH 5
 `define DEPENDENCY_WIDTH 6 // -1 for no dependency
 
