@@ -37,20 +37,20 @@ module reorder_buffer (
     input wire [`ROB_SIZE_WIDTH - 1 : 0] mem_id,
 
     // from RF
-    input wire [`DEPENDENCY_WIDTH - 1 : 0] rf_dep1,
-    input wire [`DEPENDENCY_WIDTH - 1 : 0] rf_dep2,
+    input wire [`DEPENDENCY_WIDTH - 1 : 0] rf_dep1,  // dependency of register dec_rs1
+    input wire [`DEPENDENCY_WIDTH - 1 : 0] rf_dep2,  // dependency of register dec_rs2
 
     // from RS
     input wire [`ROB_SIZE_WIDTH - 1 : 0] rs_remove_id,  // the rob id of the instruction being removed from rs
 
     // output
     output wire                            rob_full,
-    output wire                            rob_Q1_ready,      // to RS
-    output wire [           `XLEN - 1 : 0] rob_Q1_val,        // to RS
-    output wire                            rob_Q2_ready,      // to RS
-    output wire [           `XLEN - 1 : 0] rob_Q2_val,        // to RS
+    output wire                            rob_Q1_ready,      // to LSB and RS
+    output wire [           `XLEN - 1 : 0] rob_Q1_val,        // to LSB and RS
+    output wire                            rob_Q2_ready,      // to LSB and RS
+    output wire [           `XLEN - 1 : 0] rob_Q2_val,        // to LSB and RS
     output wire [   `ALU_OP_WIDTH - 1 : 0] rob_rs_remove_op,  // to RS
-    output reg  [ `ROB_SIZE_WIDTH - 1 : 0] rob_head_id,       // circular queue id: [head, tail)
+    output reg  [ `ROB_SIZE_WIDTH - 1 : 0] rob_head_id,       // range: [head, tail)
     output reg  [ `ROB_SIZE_WIDTH - 1 : 0] rob_tail_id,
     output reg                             rob_flush,
     output reg  [           `XLEN - 1 : 0] rob_correct_pc,    // the correct branch destination

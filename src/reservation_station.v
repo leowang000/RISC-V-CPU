@@ -50,8 +50,8 @@ module reservation_station (
 );
     reg                              busy                  [`RS_SIZE - 1 : 0];
     reg  [`DEPENDENCY_WIDTH - 1 : 0] Q1                    [`RS_SIZE - 1 : 0];
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] Q2                    [`RS_SIZE - 1 : 0];
     reg  [            `XLEN - 1 : 0] V1                    [`RS_SIZE - 1 : 0];
+    reg  [`DEPENDENCY_WIDTH - 1 : 0] Q2                    [`RS_SIZE - 1 : 0];
     reg  [            `XLEN - 1 : 0] V2                    [`RS_SIZE - 1 : 0];
     reg  [  `ROB_SIZE_WIDTH - 1 : 0] id                    [`RS_SIZE - 1 : 0];  // the rob id
 
@@ -76,8 +76,8 @@ module reservation_station (
         for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
             busy[i] = 1'b0;
             Q1[i]   = -`DEPENDENCY_WIDTH'b1;
-            Q2[i]   = -`DEPENDENCY_WIDTH'b1;
             V1[i]   = `XLEN'b0;
+            Q2[i]   = -`DEPENDENCY_WIDTH'b1;
             V2[i]   = `XLEN'b0;
             id[i]   = `ROB_SIZE_WIDTH'b0;
         end
