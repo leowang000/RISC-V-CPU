@@ -8,7 +8,7 @@ module register_file (
 
     // from Decoder
     input wire                            dec_ready,
-    input wire [`INST_TYPE_WIDTH - 1 : 0] dec_inst_type,
+    input wire [`INST_TYPE_WIDTH - 1 : 0] dec_op,
     input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rd,
     input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rs1,
     input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rs2,
@@ -29,14 +29,10 @@ module register_file (
     reg [            `XLEN - 1 : 0] val[`REG_CNT - 1 : 0];
     reg [`DEPENDENCY_WIDTH - 1 : 0] dep[`REG_CNT - 1 : 0];
 
-    assign rf_val1 = (dec_rs1 == `REG_CNT_WIDTH'b0) ? `XLEN'b0 : ((rob_ready && rob_rd == dec_rs1) ? rob_val : val[dec_rs1]);
-    assign rf_val2 = (dec_rs2 == `REG_CNT_WIDTH'b0) ? `XLEN'b0 : ((rob_ready && rob_rd == dec_rs2) ? rob_val : val[dec_rs2]);
-    assign rf_dep1 = (dec_rs1 == `REG_CNT_WIDTH'b0 ||
-        (rob_ready && rob_rd == dec_rs1 && rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[dec_rs1][`ROB_SIZE_WIDTH - 1 : 0])) ? -`DEPENDENCY_WIDTH'b1 :
-        dep[dec_rs1];
-    assign rf_dep2 = (dec_rs2 == `REG_CNT_WIDTH'b0 || 
-        (rob_ready && rob_rd == dec_rs2 && rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[dec_rs2][`ROB_SIZE_WIDTH - 1 : 0])) ? -`DEPENDENCY_WIDTH'b1 :
-        dep[dec_rs2];
+    assign rf_val1 = (dec_rs1 == `REG_CNT_WIDTH'b0 ? `XLEN'b0 : (rob_ready && rob_rd == dec_rs1 ? rob_val : val[dec_rs1]));
+    assign rf_val2 = (dec_rs2 == `REG_CNT_WIDTH'b0 ? `XLEN'b0 : (rob_ready && rob_rd == dec_rs2 ? rob_val : val[dec_rs2]));
+    assign rf_dep1 = (dec_rs1 == `REG_CNT_WIDTH'b0 || (rob_ready && rob_rd == dec_rs1 && rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[dec_rs1][`ROB_SIZE_WIDTH-1 : 0]) ? -`DEPENDENCY_WIDTH'b1 : dep[dec_rs1]);
+    assign rf_dep2 = (dec_rs2 == `REG_CNT_WIDTH'b0 || (rob_ready && rob_rd == dec_rs2 && rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[dec_rs2][`ROB_SIZE_WIDTH-1 : 0]) ? -`DEPENDENCY_WIDTH'b1 : dep[dec_rs2]);
 
     initial begin
         for (integer i = 0; i < `REG_CNT; i = i + 1) begin
@@ -58,8 +54,8 @@ module register_file (
                 end
             end
             if (!stall && dec_ready && dec_rd != 0) begin
-                case (dec_inst_type)
-                    `HALT, `BEQ, `BNE, `BLT, `BGE, `BLTU, `SB, `SH, `SW: ;
+                case (dec_op)
+                    `BEQ, `BNE, `BLT, `BGE, `BLTU, `SB, `SH, `SW: ;
                     default: dep[dec_rd] <= rob_tail_id;  // zero extension: rob_tail_id
                 endcase
             end

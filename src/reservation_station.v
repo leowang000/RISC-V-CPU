@@ -20,10 +20,10 @@ module reservation_station (
     input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rs2,
     input wire [           `XLEN - 1 : 0] dec_imm,
 
-    // from Memory
-    input wire                           mem_ready,
-    input wire [          `XLEN - 1 : 0] mem_res,
-    input wire [`ROB_SIZE_WIDTH - 1 : 0] mem_id,     // the rob id of the load instruction
+    // from Memory Controller
+    input wire                           mem_data_ready,
+    input wire [          `XLEN - 1 : 0] mem_data,
+    input wire [`ROB_SIZE_WIDTH - 1 : 0] mem_id,          // the rob id of the load instruction
 
     // from RF
     input wire [            `XLEN - 1 : 0] rf_val1,  // value of register dec_rs1
@@ -32,20 +32,21 @@ module reservation_station (
     input wire [`DEPENDENCY_WIDTH - 1 : 0] rf_dep2,  // dependency of register dec_rs2
 
     // from ROB
-    input wire                           rob_rs_Q1_ready,
-    input wire [          `XLEN - 1 : 0] rob_rs_Q1_val,
-    input wire                           rob_rs_Q2_ready,
-    input wire [          `XLEN - 1 : 0] rob_rs_Q2_val,
+    input wire                           rob_Q1_ready,
+    input wire [          `XLEN - 1 : 0] rob_Q1_val,
+    input wire                           rob_Q2_ready,
+    input wire [          `XLEN - 1 : 0] rob_Q2_val,
     input wire                           rob_rs_remove_op,
     input wire [`ROB_SIZE_WIDTH - 1 : 0] rob_tail_id,
 
     // output
-    output reg                           rs_full,
-    output reg                           rs_ready,  // to ALU
-    output reg [  `ALU_OP_WIDTH - 1 : 0] rs_op,     // to ALU
-    output reg [          `XLEN - 1 : 0] rs_val1,   // to ALU
-    output reg [          `XLEN - 1 : 0] rs_val2,   // to ALU
-    output reg [`ROB_SIZE_WIDTH - 1 : 0] rs_id      // to ALU, the rob id of the instruction being calculated
+    output wire                           remove_id,  // to ROB
+    output reg                            rs_full,
+    output reg                            rs_ready,   // to ALU
+    output reg  [  `ALU_OP_WIDTH - 1 : 0] rs_op,      // to ALU
+    output reg  [          `XLEN - 1 : 0] rs_val1,    // to ALU
+    output reg  [          `XLEN - 1 : 0] rs_val2,    // to ALU
+    output reg  [`ROB_SIZE_WIDTH - 1 : 0] rs_id       // to ALU, the rob id of the instruction being calculated
 );
     reg                              busy                  [`RS_SIZE - 1 : 0];
     reg  [`DEPENDENCY_WIDTH - 1 : 0] Q1                    [`RS_SIZE - 1 : 0];
@@ -62,12 +63,11 @@ module reservation_station (
     reg  [   `RS_SIZE_WIDTH - 1 : 0] tmp_remove_id;
     reg                              tmp_should_remove;
 
-    assign tmp_inst_should_enter = (dec_op != `LUI && dec_op != `AUIPC && dec_op != `JAL && dec_op != `LB && dec_op != `LH && dec_op != `LW &&
-        dec_op != `LBU && dec_op != `LHU && dec_op != `SB && dec_op != `SH && dec_op != `SW && dec_op != `HALT);
-    assign tmp_two_op = (dec_op != `JALR && dec_op != `ADDI && dec_op != `SLTI && dec_op != `SLTIU && dec_op != `XORI && dec_op != `ORI &&
-        dec_op != `ANDI && dec_op != `SLLI && dec_op != `SRLI && dec_op != `SRAI);
+    assign tmp_inst_should_enter = (dec_op != `LUI && dec_op != `AUIPC && dec_op != `JAL && dec_op != `LB && dec_op != `LH && dec_op != `LW && dec_op != `LBU && dec_op != `LHU && dec_op != `SB && dec_op != `SH && dec_op != `SW);
+    assign tmp_two_op            = (dec_op != `JALR && dec_op != `ADDI && dec_op != `SLTI && dec_op != `SLTIU && dec_op != `XORI && dec_op != `ORI && dec_op != `ANDI && dec_op != `SLLI && dec_op != `SRLI && dec_op != `SRAI);
 
     initial begin
+        rs_full  = 1'b0;
         rs_ready = 1'b0;
         rs_op    = `ALU_OP_WIDTH'b0;
         rs_val1  = `XLEN'b0;
@@ -127,8 +127,8 @@ module reservation_station (
                     V1[tmp_insert_id] <= rf_val1;
                     Q1[tmp_insert_id] <= rf_dep1;
                 end else begin
-                    if (rob_rs_Q1_ready) begin
-                        V1[tmp_insert_id] <= rob_rs_Q1_val;
+                    if (rob_Q1_ready) begin
+                        V1[tmp_insert_id] <= rob_Q1_val;
                         Q1[tmp_insert_id] <= -`DEPENDENCY_WIDTH'b1;
                     end
                 end
@@ -137,8 +137,8 @@ module reservation_station (
                         V2[tmp_insert_id] <= rf_val2;
                         Q2[tmp_insert_id] <= rf_dep2;
                     end else begin
-                        if (rob_rs_Q2_ready) begin
-                            V2[tmp_insert_id] <= rob_rs_Q2_val;
+                        if (rob_Q2_ready) begin
+                            V2[tmp_insert_id] <= rob_Q2_val;
                             Q2[tmp_insert_id] <= -`DEPENDENCY_WIDTH'b1;
                         end
                     end
@@ -147,16 +147,16 @@ module reservation_station (
                     Q2[tmp_insert_id] <= -`DEPENDENCY_WIDTH'b1;
                 end
             end
-            if (mem_ready) begin
+            if (mem_data_ready) begin
                 for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
                     if (busy[i]) begin
                         if (Q1[i] == mem_id) begin  // zero extension: mem_id
                             Q1[i] <= -`DEPENDENCY_WIDTH'b1;
-                            V1[i] <= mem_res;
+                            V1[i] <= mem_data;
                         end
                         if (Q2[i] == mem_id) begin  // zero extension: mem_id
                             Q2[i] <= -`DEPENDENCY_WIDTH'b1;
-                            V2[i] <= mem_res;
+                            V2[i] <= mem_data;
                         end
                     end
                 end

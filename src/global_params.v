@@ -70,6 +70,5 @@
 `define SRA `INST_TYPE_WIDTH'd34
 `define OR `INST_TYPE_WIDTH'd35
 `define AND `INST_TYPE_WIDTH'd36
-`define HALT `INST_TYPE_WIDTH'd37
 
 `endif

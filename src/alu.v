@@ -36,12 +36,12 @@ module alu (
                 `ALU_SHL:  calculate = rs_val1 << rs_val2;
                 `ALU_SHR:  calculate = rs_val1 >> rs_val2;
                 `ALU_SHRA: calculate = rs_val1 >>> rs_val2;
-                `ALU_EQ:   calculate = (rs_val1 == rs_val2) ? `XLEN'b1 : `XLEN'b0;
-                `ALU_NEQ:  calculate = (rs_val1 != rs_val2) ? `XLEN'b1 : `XLEN'b0;
-                `ALU_LT:   calculate = ($signed(rs_val1) < $signed(rs_val2)) ? `XLEN'b1 : `XLEN'b0;
-                `ALU_LTU:  calculate = (rs_val1 < rs_val2) ? `XLEN'b1 : `XLEN'b0;
-                `ALU_GE:   calculate = ($signed(rs_val1) >= $signed(rs_val2)) ? `XLEN'b1 : `XLEN'b0;
-                `ALU_GEU:  calculate = (rs_val1 >= rs_val2) ? `XLEN'b1 : `XLEN'b0;
+                `ALU_EQ:   calculate = (rs_val1 == rs_val2 ? `XLEN'b1 : `XLEN'b0);
+                `ALU_NEQ:  calculate = (rs_val1 != rs_val2 ? `XLEN'b1 : `XLEN'b0);
+                `ALU_LT:   calculate = ($signed(rs_val1) < $signed(rs_val2) ? `XLEN'b1 : `XLEN'b0);
+                `ALU_LTU:  calculate = (rs_val1 < rs_val2 ? `XLEN'b1 : `XLEN'b0);
+                `ALU_GE:   calculate = ($signed(rs_val1) >= $signed(rs_val2) ? `XLEN'b1 : `XLEN'b0);
+                `ALU_GEU:  calculate = (rs_val1 >= rs_val2 ? `XLEN'b1 : `XLEN'b0);
                 default:   calculate = `XLEN'b0;
             endcase
         end
