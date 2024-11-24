@@ -62,6 +62,14 @@ module reservation_station (
     reg                              tmp_remove_break_flag;
     reg  [   `RS_SIZE_WIDTH - 1 : 0] tmp_remove_id;
     reg                              tmp_should_remove;
+    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_Q1;
+    reg  [            `XLEN - 1 : 0] tmp_new_V1;
+    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_Q2;
+    reg  [            `XLEN - 1 : 0] tmp_new_V2;
+    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q1;
+    reg  [            `XLEN - 1 : 0] tmp_new_updated_V1;
+    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q2;
+    reg  [            `XLEN - 1 : 0] tmp_new_updated_V2;
 
     assign tmp_inst_should_enter = (dec_op != `LUI && dec_op != `AUIPC && dec_op != `JAL && dec_op != `LB && dec_op != `LH && dec_op != `LW && dec_op != `LBU && dec_op != `LHU && dec_op != `SB && dec_op != `SH && dec_op != `SW);
     assign tmp_two_op            = (dec_op != `JALR && dec_op != `ADDI && dec_op != `SLTI && dec_op != `SLTIU && dec_op != `XORI && dec_op != `ORI && dec_op != `ANDI && dec_op != `SLLI && dec_op != `SRLI && dec_op != `SRAI);
@@ -86,6 +94,14 @@ module reservation_station (
         tmp_remove_break_flag = 1'b0;
         tmp_remove_id         = `RS_SIZE_WIDTH'b0;
         tmp_should_remove     = 1'b0;
+        tmp_new_Q1            = `DEPENDENCY_WIDTH'b0;
+        tmp_new_V1            = `XLEN'b0;
+        tmp_new_Q2            = `DEPENDENCY_WIDTH'b0;
+        tmp_new_V2            = `XLEN'b0;
+        tmp_new_updated_Q1    = `DEPENDENCY_WIDTH'b0;
+        tmp_new_updated_V1    = `XLEN'b0;
+        tmp_new_updated_Q2    = `DEPENDENCY_WIDTH'b0;
+        tmp_new_updated_V2    = `XLEN'b0;
     end
 
     always @(*) begin
@@ -113,6 +129,61 @@ module reservation_station (
         end
     end
 
+    always @(*) begin
+        if (|rf_dep1) begin  // rf_dep1 == -1
+            tmp_new_Q1 = -`DEPENDENCY_WIDTH'b1;
+            tmp_new_V1 = rf_val1;
+        end else begin
+            if (rob_Q1_ready) begin
+                tmp_new_Q1 = -`DEPENDENCY_WIDTH'b1;
+                tmp_new_V1 = rob_Q1_val;
+            end else begin
+                tmp_new_Q1 = rf_dep1;
+                tmp_new_V1 = `XLEN'b0;
+            end
+        end
+        if (tmp_new_Q1 == mem_id) begin  // zero extension: mem_id
+            tmp_new_updated_Q1 = -`DEPENDENCY_WIDTH'b1;
+            tmp_new_updated_V1 = mem_data;
+        end else if (tmp_new_Q1 == alu_id) begin  // zero extension: alu_id
+            tmp_new_updated_Q1 = -`DEPENDENCY_WIDTH'b1;
+            tmp_new_updated_V1 = alu_res;
+        end else begin
+            tmp_new_updated_Q1 = tmp_new_Q1;
+            tmp_new_updated_V1 = tmp_new_V1;
+        end
+    end
+
+    always @(*) begin
+        if (tmp_two_op) begin
+            if (|rf_dep2) begin  // rf_dep1 == -1
+                tmp_new_Q2 = -`DEPENDENCY_WIDTH'b1;
+                tmp_new_V2 = rf_val2;
+            end else begin
+                if (rob_Q2_ready) begin
+                    tmp_new_Q2 = -`DEPENDENCY_WIDTH'b1;
+                    tmp_new_V2 = rob_Q2_val;
+                end else begin
+                    tmp_new_Q2 = rf_dep2;
+                    tmp_new_V2 = `XLEN'b0;
+                end
+            end
+        end else begin
+            tmp_new_Q2 = -`DEPENDENCY_WIDTH'b1;
+            tmp_new_V2 = dec_imm;
+        end
+        if (tmp_new_Q2 == mem_id) begin  // zero extension: mem_id
+            tmp_new_updated_Q2 = -`DEPENDENCY_WIDTH'b1;
+            tmp_new_updated_V2 = mem_data;
+        end else if (tmp_new_Q2 == alu_id) begin  // zero extension: alu_id
+            tmp_new_updated_Q2 = -`DEPENDENCY_WIDTH'b1;
+            tmp_new_updated_V2 = alu_res;
+        end else begin
+            tmp_new_updated_Q2 = tmp_new_Q2;
+            tmp_new_updated_V2 = tmp_new_V2;
+        end
+    end
+
     always @(posedge clk) begin
         if (flush) begin
             rs_ready <= 1'b0;
@@ -123,29 +194,10 @@ module reservation_station (
             if (!stall && dec_ready && tmp_inst_should_enter) begin
                 busy[tmp_insert_id] <= 1'b1;
                 id[tmp_insert_id]   <= rob_tail_id;
-                if (|rf_dep1) begin  // rf_dep1 == -1
-                    V1[tmp_insert_id] <= rf_val1;
-                    Q1[tmp_insert_id] <= rf_dep1;
-                end else begin
-                    if (rob_Q1_ready) begin
-                        V1[tmp_insert_id] <= rob_Q1_val;
-                        Q1[tmp_insert_id] <= -`DEPENDENCY_WIDTH'b1;
-                    end
-                end
-                if (tmp_two_op) begin
-                    if (|rf_dep2) begin  // rf_dep1 == -1
-                        V2[tmp_insert_id] <= rf_val2;
-                        Q2[tmp_insert_id] <= rf_dep2;
-                    end else begin
-                        if (rob_Q2_ready) begin
-                            V2[tmp_insert_id] <= rob_Q2_val;
-                            Q2[tmp_insert_id] <= -`DEPENDENCY_WIDTH'b1;
-                        end
-                    end
-                end else begin
-                    V2[tmp_insert_id] <= dec_imm;
-                    Q2[tmp_insert_id] <= -`DEPENDENCY_WIDTH'b1;
-                end
+                Q1[tmp_insert_id]   <= tmp_new_updated_Q1;
+                V1[tmp_insert_id]   <= tmp_new_updated_V1;
+                Q2[tmp_insert_id]   <= tmp_new_updated_Q2;
+                V2[tmp_insert_id]   <= tmp_new_updated_V2;
             end
             if (mem_data_ready) begin
                 for (integer i = 0; i < `RS_SIZE; i = i + 1) begin

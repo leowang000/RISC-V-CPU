@@ -22,6 +22,10 @@
 `define ALU_GE `ALU_OP_WIDTH'd12
 `define ALU_GEU `ALU_OP_WIDTH'd13
 
+// BP
+`define BP_SIZE 128
+`define BP_SIZE_WIDTH 7
+
 // LSB
 `define LSB_SIZE 16 // capacity = 15
 `define LSB_SIZE_WIDTH 15
