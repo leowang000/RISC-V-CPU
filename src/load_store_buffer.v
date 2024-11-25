@@ -12,14 +12,14 @@ module load_store_buffer (
     input wire [`ROB_SIZE_WIDTH - 1 : 0] alu_id,     // the rob id of the instruction being calculated
 
     // from Decoder
-    input wire                            dec_ready,
-    input wire [`INST_TYPE_WIDTH - 1 : 0] dec_op,
-    input wire                            dec_jump_pred,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rd,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rs1,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rs2,
-    input wire [           `XLEN - 1 : 0] dec_imm,
-    input wire [           `XLEN - 1 : 0] dec_inst_addr,
+    input wire                          dec_ready,
+    input wire [`INST_OP_WIDTH - 1 : 0] dec_op,
+    input wire                          dec_jump_pred,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rd,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs1,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs2,
+    input wire [         `XLEN - 1 : 0] dec_imm,
+    input wire [         `XLEN - 1 : 0] dec_inst_addr,
 
     // from Memory Controller
     input wire                           mem_busy,
@@ -44,18 +44,18 @@ module load_store_buffer (
     // output
     output wire                             lsb_full,
     output wire                             lsb_empty,
-    output wire [ `INST_TYPE_WIDTH - 1 : 0] lsb_front_op,  // to ROB
+    output wire [   `INST_OP_WIDTH - 1 : 0] lsb_front_op,  // to ROB
     output wire [`DEPENDENCY_WIDTH - 1 : 0] lsb_front_Q1,  // to ROB
     output wire [            `XLEN - 1 : 0] lsb_front_V1,  // to ROB
     output wire [`DEPENDENCY_WIDTH - 1 : 0] lsb_front_Q2,  // to ROB
     output wire [            `XLEN - 1 : 0] lsb_front_V2,  // to ROB
     output wire [  `ROB_SIZE_WIDTH - 1 : 0] lsb_front_id,  // to ROB
     output reg                              lsb_ready,     // to Memory Controller
-    output reg  [ `INST_TYPE_WIDTH - 1 : 0] lsb_op,        // to Memory Controller
+    output reg  [   `INST_OP_WIDTH - 1 : 0] lsb_op,        // to Memory Controller
     output reg  [            `XLEN - 1 : 0] lsb_addr,      // to Memory Controller
     output reg  [  `ROB_SIZE_WIDTH - 1 : 0] lsb_id         // to Memory Controller
 );
-    reg  [ `INST_TYPE_WIDTH - 1 : 0] op                 [`LSB_SIZE - 1 : 0];
+    reg  [   `INST_OP_WIDTH - 1 : 0] op                 [`LSB_SIZE - 1 : 0];
     reg  [`DEPENDENCY_WIDTH - 1 : 0] Q1                 [`LSB_SIZE - 1 : 0];
     reg  [            `XLEN - 1 : 0] V1                 [`LSB_SIZE - 1 : 0];
     reg  [`DEPENDENCY_WIDTH - 1 : 0] Q2                 [`LSB_SIZE - 1 : 0];
@@ -92,11 +92,11 @@ module load_store_buffer (
 
     initial begin
         lsb_ready = 1'b0;
-        lsb_op    = `INST_TYPE_WIDTH'b0;
+        lsb_op    = `INST_OP_WIDTH'b0;
         lsb_addr  = `XLEN'b0;
         lsb_id    = `ROB_SIZE_WIDTH'b0;
         for (integer i = 0; i < `LSB_SIZE; i = i + 1) begin
-            op[i] = `INST_TYPE_WIDTH'b0;
+            op[i] = `INST_OP_WIDTH'b0;
             Q1[i] = -`DEPENDENCY_WIDTH'b1;
             V1[i] = `XLEN'b0;
             Q2[i] = -`DEPENDENCY_WIDTH'b1;

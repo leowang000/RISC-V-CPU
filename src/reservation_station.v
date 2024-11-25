@@ -12,13 +12,13 @@ module reservation_station (
     input wire [`ROB_SIZE_WIDTH - 1 : 0] alu_id,     // the rob id of the instruction being calculated
 
     // from Decoder
-    input wire                            dec_ready,
-    input wire [`INST_TYPE_WIDTH - 1 : 0] dec_op,
-    input wire                            dec_jump_pred,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rd,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rs1,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rs2,
-    input wire [           `XLEN - 1 : 0] dec_imm,
+    input wire                          dec_ready,
+    input wire [`INST_OP_WIDTH - 1 : 0] dec_op,
+    input wire                          dec_jump_pred,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rd,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs1,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs2,
+    input wire [         `XLEN - 1 : 0] dec_imm,
 
     // from Memory Controller
     input wire                           mem_data_ready,

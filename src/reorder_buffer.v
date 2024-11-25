@@ -12,18 +12,18 @@ module reorder_buffer (
     input wire [`ROB_SIZE_WIDTH - 1 : 0] alu_id,     // the rob id of the instruction being calculated
 
     // from Decoder
-    input wire                            dec_ready,
-    input wire [`INST_TYPE_WIDTH - 1 : 0] dec_op,
-    input wire                            dec_jump_pred,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rd,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rs1,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rs2,
-    input wire [           `XLEN - 1 : 0] dec_imm,
-    input wire [           `XLEN - 1 : 0] dec_inst_addr,
+    input wire                          dec_ready,
+    input wire [`INST_OP_WIDTH - 1 : 0] dec_op,
+    input wire                          dec_jump_pred,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rd,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs1,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs2,
+    input wire [         `XLEN - 1 : 0] dec_imm,
+    input wire [         `XLEN - 1 : 0] dec_inst_addr,
 
     // from LSB
     input wire                             lsb_empty,
-    input wire [ `INST_TYPE_WIDTH - 1 : 0] lsb_front_op,
+    input wire [   `INST_OP_WIDTH - 1 : 0] lsb_front_op,
     input wire [  `ROB_SIZE_WIDTH - 1 : 0] lsb_front_id,
     input wire [`DEPENDENCY_WIDTH - 1 : 0] lsb_front_Q1,
     input wire [            `XLEN - 1 : 0] lsb_front_V1,
@@ -44,43 +44,43 @@ module reorder_buffer (
     input wire [`ROB_SIZE_WIDTH - 1 : 0] rs_remove_id,  // the rob id of the instruction being removed from rs
 
     // output
-    output wire                            rob_full,
-    output wire                            rob_Q1_ready,      // to LSB and RS
-    output wire [           `XLEN - 1 : 0] rob_Q1_val,        // to LSB and RS
-    output wire                            rob_Q2_ready,      // to LSB and RS
-    output wire [           `XLEN - 1 : 0] rob_Q2_val,        // to LSB and RS
-    output wire [   `ALU_OP_WIDTH - 1 : 0] rob_rs_remove_op,  // to RS
-    output reg  [ `ROB_SIZE_WIDTH - 1 : 0] rob_head_id,       // range: [head, tail)
-    output reg  [ `ROB_SIZE_WIDTH - 1 : 0] rob_tail_id,
-    output reg                             rob_flush,
-    output reg  [           `XLEN - 1 : 0] rob_correct_pc,    // the correct branch destination
-    output reg                             rob_bp_enable,     // to Branch Predictor
-    output reg  [           `XLEN - 1 : 0] rob_bp_inst_addr,  // to Branch Predictor
-    output reg                             rob_bp_jump,       // to Branch Predictor
-    output reg                             rob_bp_correct,    // to Branch Predictor
-    output reg                             rob_store_enable,  // to Memory Controller
-    output reg  [`INST_TYPE_WIDTH - 1 : 0] rob_store_op,      // to Memory Controller
-    output reg  [           `XLEN - 1 : 0] rob_store_addr,    // to Memory Controller
-    output reg  [           `XLEN - 1 : 0] rob_store_val,     // to Memory Controller
-    output reg                             rob_write_enable,  // to RF
-    output reg  [  `REG_CNT_WIDTH - 1 : 0] rob_write_rd,      // to RF
-    output reg  [           `XLEN - 1 : 0] rob_write_val      // to RF
+    output wire                           rob_full,
+    output wire                           rob_Q1_ready,      // to LSB and RS
+    output wire [          `XLEN - 1 : 0] rob_Q1_val,        // to LSB and RS
+    output wire                           rob_Q2_ready,      // to LSB and RS
+    output wire [          `XLEN - 1 : 0] rob_Q2_val,        // to LSB and RS
+    output wire [  `ALU_OP_WIDTH - 1 : 0] rob_rs_remove_op,  // to RS
+    output reg  [`ROB_SIZE_WIDTH - 1 : 0] rob_head_id,       // range: [head, tail)
+    output reg  [`ROB_SIZE_WIDTH - 1 : 0] rob_tail_id,
+    output reg                            rob_flush,
+    output reg  [          `XLEN - 1 : 0] rob_correct_pc,    // the correct branch destination
+    output reg                            rob_bp_enable,     // to Branch Predictor
+    output reg  [          `XLEN - 1 : 0] rob_bp_inst_addr,  // to Branch Predictor
+    output reg                            rob_bp_jump,       // to Branch Predictor
+    output reg                            rob_bp_correct,    // to Branch Predictor
+    output reg                            rob_store_enable,  // to Memory Controller
+    output reg  [ `INST_OP_WIDTH - 1 : 0] rob_store_op,      // to Memory Controller
+    output reg  [          `XLEN - 1 : 0] rob_store_addr,    // to Memory Controller
+    output reg  [          `XLEN - 1 : 0] rob_store_val,     // to Memory Controller
+    output reg                            rob_write_enable,  // to RF
+    output reg  [ `REG_CNT_WIDTH - 1 : 0] rob_write_rd,      // to RF
+    output reg  [          `XLEN - 1 : 0] rob_write_val      // to RF
 );
-    reg  [`INST_TYPE_WIDTH - 1 : 0] op                   [`ROB_SIZE - 1 : 0];
-    reg  [  `REG_CNT_WIDTH - 1 : 0] rd                   [`ROB_SIZE - 1 : 0];
-    reg  [           `XLEN - 1 : 0] val                  [`ROB_SIZE - 1 : 0];
-    reg  [           `XLEN - 1 : 0] addr                 [`ROB_SIZE - 1 : 0];  // store inst: addr = store address; branch inst: addr = destination
-    reg                             ready                [`ROB_SIZE - 1 : 0];
-    reg                             jump_pred            [`ROB_SIZE - 1 : 0];
-    reg  [           `XLEN - 1 : 0] inst_addr            [`ROB_SIZE - 1 : 0];
+    reg  [`INST_OP_WIDTH - 1 : 0] op                   [`ROB_SIZE - 1 : 0];
+    reg  [`REG_CNT_WIDTH - 1 : 0] rd                   [`ROB_SIZE - 1 : 0];
+    reg  [         `XLEN - 1 : 0] val                  [`ROB_SIZE - 1 : 0];
+    reg  [         `XLEN - 1 : 0] addr                 [`ROB_SIZE - 1 : 0];  // store inst: addr = store address; branch inst: addr = destination
+    reg                           ready                [`ROB_SIZE - 1 : 0];
+    reg                           jump_pred            [`ROB_SIZE - 1 : 0];
+    reg  [         `XLEN - 1 : 0] inst_addr            [`ROB_SIZE - 1 : 0];
 
-    wire                            tmp_rob_empty;
-    wire                            tmp_lsb_front_store;
-    wire                            tmp_rob_front_store;
-    wire                            tmp_rob_front_branch;
-    wire                            tmp_commit;
-    wire                            tmp_flush;
-    wire [           `XLEN - 1 : 0] tmp_correct_pc;
+    wire                          tmp_rob_empty;
+    wire                          tmp_lsb_front_store;
+    wire                          tmp_rob_front_store;
+    wire                          tmp_rob_front_branch;
+    wire                          tmp_commit;
+    wire                          tmp_flush;
+    wire [         `XLEN - 1 : 0] tmp_correct_pc;
 
     assign rob_full             = (rob_head_id == rob_tail_id + `ROB_SIZE_WIDTH'b1);
     assign rob_Q1_ready         = (|rf_dep1 ? 1'b0 : ready[rf_dep1[`ROB_SIZE-1 : 0]]);
@@ -105,11 +105,11 @@ module reorder_buffer (
         rob_write_rd     = `REG_CNT_WIDTH'b0;
         rob_write_val    = `XLEN'b0;
         rob_store_enable = 1'b0;
-        rob_store_op     = `INST_TYPE_WIDTH'b0;
+        rob_store_op     = `INST_OP_WIDTH'b0;
         rob_store_addr   = `XLEN'b0;
         rob_store_val    = `XLEN'b0;
         for (integer i = 0; i < `ROB_SIZE; i = i + 1) begin
-            op[i]        = `INST_TYPE_WIDTH'b0;
+            op[i]        = `INST_OP_WIDTH'b0;
             rd[i]        = `REG_CNT_WIDTH'b0;
             val[i]       = `XLEN'b0;
             addr[i]      = `XLEN'b0;

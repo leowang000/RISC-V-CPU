@@ -7,11 +7,11 @@ module register_file (
     input wire stall,
 
     // from Decoder
-    input wire                            dec_ready,
-    input wire [`INST_TYPE_WIDTH - 1 : 0] dec_op,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rd,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rs1,
-    input wire [  `REG_CNT_WIDTH - 1 : 0] dec_rs2,
+    input wire                          dec_ready,
+    input wire [`INST_OP_WIDTH - 1 : 0] dec_op,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rd,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs1,
+    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs2,
 
     // from ROB
     input wire                           rob_ready,
@@ -56,7 +56,7 @@ module register_file (
             if (!stall && dec_ready && dec_rd != 0) begin
                 case (dec_op)
                     `BEQ, `BNE, `BLT, `BGE, `BLTU, `SB, `SH, `SW: ;
-                    default: dep[dec_rd] <= rob_tail_id;  // zero extension: rob_tail_id
+                    default: dep[dec_rd] <= {1'b0, rob_tail_id};
                 endcase
             end
         end
