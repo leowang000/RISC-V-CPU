@@ -156,7 +156,7 @@ module reservation_station (
 
     always @(*) begin
         if (tmp_two_op) begin
-            if (|rf_dep2) begin  // rf_dep1 == -1
+            if (|rf_dep2) begin  // rf_dep2 == -1
                 tmp_new_Q2 = -`DEPENDENCY_WIDTH'b1;
                 tmp_new_V2 = rf_val2;
             end else begin
@@ -232,7 +232,7 @@ module reservation_station (
                 rs_val1  <= V1[tmp_remove_id];
                 rs_val2  <= V2[tmp_remove_id];
                 rs_id    <= id[tmp_remove_id];
-                case (rob_rs_remove_op)  // TODO: should be rb_queue[rs_.GetCur()[rs_id].id_].inst_type_
+                case (rob_rs_remove_op)
                     `JALR, `ADD, `ADDI: rs_op <= `ALU_ADD;
                     `SUB: rs_op <= `ALU_SUB;
                     `AND, `ANDI: rs_op <= `ALU_AND;

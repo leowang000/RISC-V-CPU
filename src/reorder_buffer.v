@@ -20,6 +20,7 @@ module reorder_buffer (
     input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs2,
     input wire [         `XLEN - 1 : 0] dec_imm,
     input wire [         `XLEN - 1 : 0] dec_inst_addr,
+    input wire                          dec_c_extension,
 
     // from LSB
     input wire                             lsb_empty,
@@ -73,6 +74,7 @@ module reorder_buffer (
     reg                           ready                [`ROB_SIZE - 1 : 0];
     reg                           jump_pred            [`ROB_SIZE - 1 : 0];
     reg  [         `XLEN - 1 : 0] inst_addr            [`ROB_SIZE - 1 : 0];
+    reg                           c_extension          [`ROB_SIZE - 1 : 0];
 
     wire                          tmp_rob_empty;
     wire                          tmp_lsb_front_store;
@@ -94,7 +96,7 @@ module reorder_buffer (
     assign tmp_rob_front_branch = (!tmp_rob_empty && (op[rob_head_id] == `BEQ || op[rob_head_id] == `BNE || op[rob_head_id] == `BLT || op[rob_head_id] == `BLTU || op[rob_head_id] == `BGE || op[rob_head_id] == `BGEU));
     assign tmp_commit           = (!tmp_rob_empty && ready[rob_head_id] && (!tmp_rob_front_store && (mem_busy || rob_store_enable)));
     assign tmp_flush            = (tmp_rob_front_branch ? jump_pred[rob_head_id] != val[rob_head_id][0 : 0] : op[rob_head_id] == `JALR);
-    assign tmp_correct_pc       = (tmp_rob_front_branch ? (val[rob_head_id] ? addr[rob_head_id] : inst_addr[rob_head_id] + `XLEN'd4) : addr[rob_head_id]);
+    assign tmp_correct_pc       = (tmp_rob_front_branch ? (val[rob_head_id] ? addr[rob_head_id] : inst_addr[rob_head_id] + (c_extension[rob_head_id] ? `XLEN'd2 : `XLEN'd4)) : addr[rob_head_id]);
 
     initial begin
         rob_head_id      = `ROB_SIZE_WIDTH'b0;
@@ -109,13 +111,14 @@ module reorder_buffer (
         rob_store_addr   = `XLEN'b0;
         rob_store_val    = `XLEN'b0;
         for (integer i = 0; i < `ROB_SIZE; i = i + 1) begin
-            op[i]        = `INST_OP_WIDTH'b0;
-            rd[i]        = `REG_CNT_WIDTH'b0;
-            val[i]       = `XLEN'b0;
-            addr[i]      = `XLEN'b0;
-            ready[i]     = 1'b0;
-            jump_pred[i] = 1'b0;
-            inst_addr[i] = `XLEN'b0;
+            op[i]          = `INST_OP_WIDTH'b0;
+            rd[i]          = `REG_CNT_WIDTH'b0;
+            val[i]         = `XLEN'b0;
+            addr[i]        = `XLEN'b0;
+            ready[i]       = 1'b0;
+            jump_pred[i]   = 1'b0;
+            inst_addr[i]   = `XLEN'b0;
+            c_extension[i] = 1'b0;
         end
     end
 
@@ -127,25 +130,37 @@ module reorder_buffer (
             rob_flush        <= 1'b0;
         end else begin
             if (!stall && dec_ready) begin
-                op[rob_tail_id]        <= dec_op;
-                jump_pred[rob_tail_id] <= dec_jump_pred;
-                rd[rob_tail_id]        <= dec_rd;
-                inst_addr[rob_tail_id] <= dec_inst_addr;
+                op[rob_tail_id]          <= dec_op;
+                jump_pred[rob_tail_id]   <= dec_jump_pred;
+                rd[rob_tail_id]          <= dec_rd;
+                inst_addr[rob_tail_id]   <= dec_inst_addr;
+                c_extension[rob_tail_id] <= dec_c_extension;
                 case (dec_op)
                     `LUI: begin
                         ready[rob_tail_id] <= 1'b1;
                         val[rob_tail_id]   <= dec_imm;
+                        addr[rob_tail_id]  <= `XLEN'b0;
                     end
                     `AUIPC: begin
                         ready[rob_tail_id] <= 1'b1;
                         val[rob_tail_id]   <= dec_inst_addr + dec_imm;
+                        addr[rob_tail_id]  <= `XLEN'b0;
                     end
                     `JAL: begin
                         ready[rob_tail_id] <= 1'b1;
-                        val[rob_tail_id]   <= dec_inst_addr + `XLEN'd4;
+                        val[rob_tail_id]   <= dec_inst_addr + (dec_c_extension ? `XLEN'd2 : `XLEN'd4);
+                        addr[rob_tail_id]  <= `XLEN'b0;
                     end
-                    `JALR: val[rob_tail_id] <= dec_inst_addr + `XLEN'd4;
-                    `BEQ, `BNE, `BLT, `BLTU, `BGE, `BGEU: addr[rob_tail_id] <= dec_inst_addr + dec_imm;
+                    `JALR: begin
+                        ready[rob_tail_id] <= 1'b0;
+                        val[rob_tail_id]   <= dec_inst_addr + (dec_c_extension ? `XLEN'd2 : `XLEN'd4);
+                        addr[rob_tail_id]  <= `XLEN'b0;
+                    end
+                    `BEQ, `BNE, `BLT, `BLTU, `BGE, `BGEU: begin
+                        ready[rob_tail_id] <= 1'b0;
+                        val[rob_tail_id]   <= `XLEN'b0;
+                        addr[rob_tail_id]  <= dec_inst_addr + dec_imm;
+                    end
                     default: ;
                 endcase
                 rob_tail_id <= rob_tail_id + `ROB_SIZE_WIDTH'b1;
