@@ -5,7 +5,7 @@ module branch_predictor (
     input wire clk,
 
     // from Fetcher
-    input wire [`XLEN - 1 : 0] fet_pc,
+    input wire [`XLEN - 1 : 0] fet_inst_addr,
 
     // from ROB
     input wire                 rob_bp_enable,
@@ -25,7 +25,7 @@ module branch_predictor (
     reg [`XLEN - 1 : 0] tmp_total_sum;
     reg [`XLEN - 1 : 0] tmp_correct_sum;
 
-    assign bp_pred       = predictor[fet_pc[`BP_SIZE_WIDTH-1 : 0]];
+    assign bp_pred       = predictor[fet_inst_addr[`BP_SIZE_WIDTH-1 : 0]];
     assign bp_corret_cnt = tmp_correct_sum;
     assign bp_total_cnt  = tmp_total_sum;
 
