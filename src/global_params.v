@@ -26,14 +26,17 @@
 `define BP_SIZE 128
 `define BP_SIZE_WIDTH 7
 
+// Icache
+`define ICACHE_LINE_CNT 1024  // 16 bits in each line, 2KB in total
+
 // LSB
-`define LSB_SIZE 16 // capacity = 15
+`define LSB_SIZE 16  // capacity = 15
 `define LSB_SIZE_WIDTH 15
 
 // ROB
-`define ROB_SIZE 32 // capacity = 31
+`define ROB_SIZE 32  // capacity = 31
 `define ROB_SIZE_WIDTH 5
-`define DEPENDENCY_WIDTH 6 // -1 for no dependency
+`define DEPENDENCY_WIDTH 6  // -1 for no dependency
 
 // RS
 `define RS_SIZE 16

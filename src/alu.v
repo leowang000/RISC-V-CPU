@@ -18,8 +18,8 @@ module alu (
     output reg [`ROB_SIZE_WIDTH - 1 : 0] alu_id      // the rob id of the instruction being calculated
 );
     initial begin
-        alu_res   = `XLEN'b0;
         alu_ready = 1'b0;
+        alu_res   = `XLEN'b0;
     end
 
     function [`XLEN - 1 : 0] calculate;
@@ -50,8 +50,6 @@ module alu (
     always @(posedge clk) begin
         if (flush || !rs_ready) begin
             alu_ready <= 1'b0;
-            alu_res   <= `XLEN'b0;
-            alu_id    <= `ROB_SIZE_WIDTH'b0;
         end else begin
             alu_ready <= 1'b1;
             alu_res   <= calculate(rs_op, rs_val1, rs_val2);
