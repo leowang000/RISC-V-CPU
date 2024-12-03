@@ -59,13 +59,13 @@ module reorder_buffer (
     output reg  [          `XLEN - 1 : 0] rob_bp_inst_addr,  // to Branch Predictor
     output reg                            rob_bp_jump,       // to Branch Predictor
     output reg                            rob_bp_correct,    // to Branch Predictor
-    output reg                            rob_store_enable,  // to Memory Controller
-    output reg  [ `INST_OP_WIDTH - 1 : 0] rob_store_op,      // to Memory Controller
-    output reg  [          `XLEN - 1 : 0] rob_store_addr,    // to Memory Controller
-    output reg  [          `XLEN - 1 : 0] rob_store_val,     // to Memory Controller
-    output reg                            rob_write_enable,  // to RF
-    output reg  [ `REG_CNT_WIDTH - 1 : 0] rob_write_rd,      // to RF
-    output reg  [          `XLEN - 1 : 0] rob_write_val      // to RF
+    output reg                            rob_mem_enable,    // to Memory Controller
+    output reg  [ `INST_OP_WIDTH - 1 : 0] rob_mem_op,        // to Memory Controller
+    output reg  [          `XLEN - 1 : 0] rob_mem_addr,      // to Memory Controller
+    output reg  [          `XLEN - 1 : 0] rob_mem_val,       // to Memory Controller
+    output reg                            rob_rf_enable,     // to RF
+    output reg  [ `REG_CNT_WIDTH - 1 : 0] rob_rf_rd,         // to RF
+    output reg  [          `XLEN - 1 : 0] rob_rf_val         // to RF
 );
     reg  [`INST_OP_WIDTH - 1 : 0] op                   [`ROB_SIZE - 1 : 0];
     reg  [`REG_CNT_WIDTH - 1 : 0] rd                   [`ROB_SIZE - 1 : 0];
@@ -94,22 +94,22 @@ module reorder_buffer (
     assign tmp_lsb_front_store  = (!lsb_empty && (lsb_front_op == `SB || lsb_front_op == `SH || lsb_front_op == `SW));
     assign tmp_rob_front_store  = (!tmp_rob_empty && (op[rob_head_id] == `SB || op[rob_head_id] == `SH || op[rob_head_id] == `SW));
     assign tmp_rob_front_branch = (!tmp_rob_empty && (op[rob_head_id] == `BEQ || op[rob_head_id] == `BNE || op[rob_head_id] == `BLT || op[rob_head_id] == `BLTU || op[rob_head_id] == `BGE || op[rob_head_id] == `BGEU));
-    assign tmp_commit           = (!tmp_rob_empty && ready[rob_head_id] && (!tmp_rob_front_store && (mem_busy || rob_store_enable)));
+    assign tmp_commit           = (!tmp_rob_empty && ready[rob_head_id] && (!tmp_rob_front_store && (mem_busy || rob_mem_enable)));
     assign tmp_flush            = (tmp_rob_front_branch ? jump_pred[rob_head_id] != val[rob_head_id][0 : 0] : op[rob_head_id] == `JALR);
     assign tmp_correct_pc       = (tmp_rob_front_branch ? (val[rob_head_id] ? addr[rob_head_id] : inst_addr[rob_head_id] + (c_extension[rob_head_id] ? `XLEN'd2 : `XLEN'd4)) : addr[rob_head_id]);
 
     initial begin
-        rob_head_id      = `ROB_SIZE_WIDTH'b0;
-        rob_tail_id      = `ROB_SIZE_WIDTH'b0;
-        rob_flush        = 1'b0;
-        rob_correct_pc   = `XLEN'b0;
-        rob_write_enable = 1'b0;
-        rob_write_rd     = `REG_CNT_WIDTH'b0;
-        rob_write_val    = `XLEN'b0;
-        rob_store_enable = 1'b0;
-        rob_store_op     = `INST_OP_WIDTH'b0;
-        rob_store_addr   = `XLEN'b0;
-        rob_store_val    = `XLEN'b0;
+        rob_head_id    = `ROB_SIZE_WIDTH'b0;
+        rob_tail_id    = `ROB_SIZE_WIDTH'b0;
+        rob_flush      = 1'b0;
+        rob_correct_pc = `XLEN'b0;
+        rob_rf_enable  = 1'b0;
+        rob_rf_rd      = `REG_CNT_WIDTH'b0;
+        rob_rf_val     = `XLEN'b0;
+        rob_mem_enable = 1'b0;
+        rob_mem_op     = `INST_OP_WIDTH'b0;
+        rob_mem_addr   = `XLEN'b0;
+        rob_mem_val    = `XLEN'b0;
         for (integer i = 0; i < `ROB_SIZE; i = i + 1) begin
             op[i]          = `INST_OP_WIDTH'b0;
             rd[i]          = `REG_CNT_WIDTH'b0;
@@ -124,10 +124,10 @@ module reorder_buffer (
 
     always @(posedge clk) begin
         if (flush) begin
-            rob_tail_id      <= rob_head_id;
-            rob_write_enable <= 1'b0;
-            rob_store_enable <= 1'b0;
-            rob_flush        <= 1'b0;
+            rob_tail_id    <= rob_head_id;
+            rob_rf_enable  <= 1'b0;
+            rob_mem_enable <= 1'b0;
+            rob_flush      <= 1'b0;
         end else begin
             if (!stall && dec_ready) begin
                 op[rob_tail_id]          <= dec_op;
@@ -183,19 +183,19 @@ module reorder_buffer (
                 ready[lsb_front_id] <= 1'b1;
             end
             if (!tmp_commit || tmp_rob_front_branch || tmp_rob_front_store) begin
-                rob_write_enable <= 1'b0;
+                rob_rf_enable <= 1'b0;
             end else begin
-                rob_write_enable <= 1'b1;
-                rob_write_rd     <= rd[rob_head_id];
-                rob_write_val    <= val[rob_head_id];
+                rob_rf_enable <= 1'b1;
+                rob_rf_rd     <= rd[rob_head_id];
+                rob_rf_val    <= val[rob_head_id];
             end
             if (!tmp_commit || !tmp_rob_front_store) begin
-                rob_store_enable <= 1'b0;
+                rob_mem_enable <= 1'b0;
             end else begin
-                rob_store_enable <= 1'b1;
-                rob_store_op     <= op[rob_head_id];
-                rob_store_addr   <= addr[rob_head_id];
-                rob_store_val    <= val[rob_head_id];
+                rob_mem_enable <= 1'b1;
+                rob_mem_op     <= op[rob_head_id];
+                rob_mem_addr   <= addr[rob_head_id];
+                rob_mem_val    <= val[rob_head_id];
             end
             if (tmp_commit) begin
                 rob_flush      <= tmp_flush;

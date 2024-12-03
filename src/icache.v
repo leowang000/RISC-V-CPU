@@ -41,6 +41,8 @@ module icache (
     assign icache_inst     = (tmp_hit_16 && tmp_c_extension ? {16'b0, data[fet_pc[10 : 1]]} : (tmp_hit_32 && !tmp_c_extension ? {data[fet_pc[10 : 1]+10'b1], data[fet_pc[10 : 1]]} : 32'b0));
 
     initial begin
+        icache_mem_enable = 1'b0;
+        icache_inst_addr = `XLEN'b0;
         for (integer i = 0; i < `ICACHE_LINE_CNT; i = i + 1) begin
             valid[i] = 1'b0;
             tag[i]   = 6'b0;
