@@ -3,6 +3,8 @@
 module icache (
     // input
     input wire clk,
+    input wire rst,
+    input wire rdy,
     input wire flush,
     input wire stall,
 
@@ -42,7 +44,7 @@ module icache (
 
     initial begin
         icache_mem_enable = 1'b0;
-        icache_inst_addr = `XLEN'b0;
+        icache_inst_addr  = `XLEN'b0;
         for (integer i = 0; i < `ICACHE_LINE_CNT; i = i + 1) begin
             valid[i] = 1'b0;
             tag[i]   = 6'b0;
@@ -53,33 +55,45 @@ module icache (
     end
 
     always @(posedge clk) begin
-        if (flush) begin
-            icache_mem_enable <= 1'b0;
-        end else if (!stall) begin
-            if (mem_inst_ready) begin
-                valid[mem_inst_addr[10 : 1]] <= 1'b1;
-                tag[mem_inst_addr[10 : 1]]   <= mem_inst_addr[16 : 11];
-                data[mem_inst_addr[10 : 1]]  <= mem_inst[15 : 0];
-                if (mem_inst[1 : 0] == 2'b11) begin
-                    valid[mem_inst_addr[10 : 1]+10'b1] <= 1'b1;
-                    tag[mem_inst_addr[10 : 1]+10'b1]   <= tmp_addr[16 : 11];
-                    data[mem_inst_addr[10 : 1]+10'b1]  <= mem_inst[31 : 16];
+        if (rdy) begin
+            if (rst) begin
+                icache_mem_enable <= 1'b0;
+                icache_inst_addr  <= `XLEN'b0;
+                for (integer i = 0; i < `ICACHE_LINE_CNT; i = i + 1) begin
+                    valid[i] <= 1'b0;
+                    tag[i]   <= 6'b0;
+                    data[i]  <= 16'b0;
                 end
-            end
-            if (fet_icache_enable && !icache_ready) begin
-                if (mem_busy) begin
-                    tmp_mem_enable <= 1'b1;
-                    tmp_inst_addr  <= fet_pc;
-                end else begin
+                tmp_mem_enable <= 1'b0;
+                tmp_inst_addr  <= `XLEN'b0;
+            end else if (flush) begin
+                icache_mem_enable <= 1'b0;
+            end else if (!stall) begin
+                if (mem_inst_ready) begin
+                    valid[mem_inst_addr[10 : 1]] <= 1'b1;
+                    tag[mem_inst_addr[10 : 1]]   <= mem_inst_addr[16 : 11];
+                    data[mem_inst_addr[10 : 1]]  <= mem_inst[15 : 0];
+                    if (mem_inst[1 : 0] == 2'b11) begin
+                        valid[mem_inst_addr[10 : 1]+10'b1] <= 1'b1;
+                        tag[mem_inst_addr[10 : 1]+10'b1]   <= tmp_addr[16 : 11];
+                        data[mem_inst_addr[10 : 1]+10'b1]  <= mem_inst[31 : 16];
+                    end
+                end
+                if (fet_icache_enable && !icache_ready) begin
+                    if (mem_busy) begin
+                        tmp_mem_enable <= 1'b1;
+                        tmp_inst_addr  <= fet_pc;
+                    end else begin
+                        icache_mem_enable <= 1'b1;
+                        icache_inst_addr  <= fet_pc;
+                    end
+                end
+                if (!mem_busy && tmp_mem_enable) begin
                     icache_mem_enable <= 1'b1;
-                    icache_inst_addr  <= fet_pc;
+                    icache_inst_addr  <= tmp_inst_addr;
+                    tmp_mem_enable    <= 1'b0;
+                    tmp_inst_addr     <= `XLEN'b0;
                 end
-            end
-            if (!mem_busy && tmp_mem_enable) begin
-                icache_mem_enable <= 1'b1;
-                icache_inst_addr  <= tmp_inst_addr;
-                tmp_mem_enable    <= 1'b0;
-                tmp_inst_addr     <= `XLEN'b0;
             end
         end
     end

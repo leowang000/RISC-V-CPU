@@ -3,8 +3,11 @@
 module load_store_buffer (
     // input
     input wire clk,
+    input wire rst,
+    input wire rdy,
     input wire flush,
     input wire stall,
+    input wire io_buffer_full,
 
     // from ALU
     input wire                           alu_ready,
@@ -88,7 +91,7 @@ module load_store_buffer (
     assign tmp_front_load   = (!lsb_empty && (lsb_front_op == `LB || lsb_front_op == `LH || lsb_front_op == `LW || lsb_front_op == `LBU || lsb_front_op == `LHU));
     assign tmp_new_load     = (dec_op == `LB || dec_op == `LH || dec_op == `LW || dec_op == `LBU || dec_op == `LHU);
     assign tmp_new_store    = (dec_op == `SB || dec_op == `SH || dec_op == `SW);
-    assign tmp_dequeue_load = (tmp_front_load && !mem_busy && !lsb_ready && |lsb_front_Q1);  // lsb_front_Q1 == -1
+    assign tmp_dequeue_load = (tmp_front_load && !mem_busy && !lsb_ready && |lsb_front_Q1 && !(lsb_front_V1 == `XLEN'h30000 && io_buffer_full));  // lsb_front_Q1 == -1
 
     initial begin
         lsb_ready = 1'b0;
@@ -171,49 +174,74 @@ module load_store_buffer (
     end
 
     always @(posedge clk) begin
-        if (flush) begin
-            tail_id   <= head_id;
-            lsb_ready <= 1'b0;
-        end else begin
-            if (!stall && dec_ready && (tmp_new_store || tmp_new_load)) begin
-                op[tail_id] <= dec_op;
-                id[tail_id] <= rob_tail_id;
-                Q1[tail_id] <= tmp_new_updated_Q1;
-                V1[tail_id] <= tmp_new_updated_V1;
-                Q2[tail_id] <= tmp_new_updated_Q2;
-                V2[tail_id] <= tmp_new_updated_V2;
-                tail_id     <= tail_id + `LSB_SIZE_WIDTH'b1;
-            end
-            if (mem_data_ready) begin
-                for (integer i = head_id; i != tail_id; i = ((i + 1) & {`LSB_SIZE_WIDTH{1'b1}})) begin
-                    if (Q1[i] == mem_id) begin  // zero extension: mem_id
-                        Q1[i] <= -`DEPENDENCY_WIDTH'b1;
-                        V1[i] <= V1[i] + mem_data;
-                    end
-                    if (Q2[i] == mem_id) begin  // zero extension: mem_id
-                        Q2[i] <= -`DEPENDENCY_WIDTH'b1;
-                        V2[i] <= mem_data;
+        if (rdy) begin
+            if (rst) begin
+                lsb_ready <= 1'b0;
+                lsb_op    <= `INST_OP_WIDTH'b0;
+                lsb_addr  <= `XLEN'b0;
+                lsb_id    <= `ROB_SIZE_WIDTH'b0;
+                for (integer i = 0; i < `LSB_SIZE; i = i + 1) begin
+                    op[i] <= `INST_OP_WIDTH'b0;
+                    Q1[i] <= -`DEPENDENCY_WIDTH'b1;
+                    V1[i] <= `XLEN'b0;
+                    Q2[i] <= -`DEPENDENCY_WIDTH'b1;
+                    V2[i] <= `XLEN'b0;
+                    id[i] <= `ROB_SIZE_WIDTH'b0;
+                end
+                head_id            <= `LSB_SIZE_WIDTH'b0;
+                tail_id            <= `LSB_SIZE_WIDTH'b0;
+                tmp_new_Q1         <= `DEPENDENCY_WIDTH'b0;
+                tmp_new_V1         <= `XLEN'b0;
+                tmp_new_Q2         <= `DEPENDENCY_WIDTH'b0;
+                tmp_new_V2         <= `XLEN'b0;
+                tmp_new_updated_Q1 <= `DEPENDENCY_WIDTH'b0;
+                tmp_new_updated_V1 <= `XLEN'b0;
+                tmp_new_updated_Q2 <= `DEPENDENCY_WIDTH'b0;
+                tmp_new_updated_V2 <= `XLEN'b0;
+            end else if (flush) begin
+                tail_id   <= head_id;
+                lsb_ready <= 1'b0;
+            end else begin
+                if (!stall && dec_ready && (tmp_new_store || tmp_new_load)) begin
+                    op[tail_id] <= dec_op;
+                    id[tail_id] <= rob_tail_id;
+                    Q1[tail_id] <= tmp_new_updated_Q1;
+                    V1[tail_id] <= tmp_new_updated_V1;
+                    Q2[tail_id] <= tmp_new_updated_Q2;
+                    V2[tail_id] <= tmp_new_updated_V2;
+                    tail_id     <= tail_id + `LSB_SIZE_WIDTH'b1;
+                end
+                if (mem_data_ready) begin
+                    for (integer i = head_id; i != tail_id; i = ((i + 1) & {`LSB_SIZE_WIDTH{1'b1}})) begin
+                        if (Q1[i] == mem_id) begin  // zero extension: mem_id
+                            Q1[i] <= -`DEPENDENCY_WIDTH'b1;
+                            V1[i] <= V1[i] + mem_data;
+                        end
+                        if (Q2[i] == mem_id) begin  // zero extension: mem_id
+                            Q2[i] <= -`DEPENDENCY_WIDTH'b1;
+                            V2[i] <= mem_data;
+                        end
                     end
                 end
-            end
-            if (alu_ready) begin
-                for (integer i = head_id; i != tail_id; i = ((i + 1) & {`LSB_SIZE_WIDTH{1'b1}})) begin
-                    if (Q1[i] == alu_id) begin  // zero extension: mem_id
-                        Q1[i] <= -`DEPENDENCY_WIDTH'b1;
-                        V1[i] <= V1[i] + alu_res;
-                    end
-                    if (Q2[i] == alu_id) begin  // zero extension: alu_id
-                        Q2[i] <= -`DEPENDENCY_WIDTH'b1;
-                        V2[i] <= alu_res;
+                if (alu_ready) begin
+                    for (integer i = head_id; i != tail_id; i = ((i + 1) & {`LSB_SIZE_WIDTH{1'b1}})) begin
+                        if (Q1[i] == alu_id) begin  // zero extension: mem_id
+                            Q1[i] <= -`DEPENDENCY_WIDTH'b1;
+                            V1[i] <= V1[i] + alu_res;
+                        end
+                        if (Q2[i] == alu_id) begin  // zero extension: alu_id
+                            Q2[i] <= -`DEPENDENCY_WIDTH'b1;
+                            V2[i] <= alu_res;
+                        end
                     end
                 end
-            end
-            lsb_ready <= tmp_dequeue_load;
-            lsb_op    <= lsb_front_op;
-            lsb_addr  <= lsb_front_V1;
-            lsb_id    <= lsb_front_id;
-            if (tmp_dequeue_load || rob_store_enable) begin
-                head_id <= head_id + `LSB_SIZE_WIDTH'b1;
+                lsb_ready <= tmp_dequeue_load;
+                lsb_op    <= lsb_front_op;
+                lsb_addr  <= lsb_front_V1;
+                lsb_id    <= lsb_front_id;
+                if (tmp_dequeue_load || rob_store_enable) begin
+                    head_id <= head_id + `LSB_SIZE_WIDTH'b1;
+                end
             end
         end
     end

@@ -3,6 +3,8 @@
 module fetcher (
     // input
     input wire clk,
+    input wire rst,
+    input wire rdy,
     input wire flush,
     input wire stall,
 
@@ -37,41 +39,50 @@ module fetcher (
         fet_inst          = `XLEN'b0;
         fet_inst_addr     = `XLEN'b0;
         fet_jump_pred     = 1'b0;
-        fet_pc            = `XLEN'b0;
         fet_icache_enable = 1'b1;
+        fet_pc            = `XLEN'b0;
     end
 
     always @(posedge clk) begin
-        if (flush) begin
-            fet_ready         <= 1'b0;
-            fet_pc            <= correct_pc;
-            fet_icache_enable <= 1'b1;
-        end else if (!stall && (icache_ready || mem_ready)) begin
-            fet_ready         <= 1'b1;
-            fet_inst          <= tmp_inst;
-            fet_inst_addr     <= fet_pc;
-            fet_jump_pred     <= bp_pred;
-            fet_icache_enable <= 1'b1;
-            if (tmp_inst[1 : 0] == 2'b11) begin
-                if (tmp_inst[6 : 0] == 7'b1101111) begin  // JAL
-                    fet_pc <= fet_pc + {{12{tmp_inst[31]}}, tmp_inst[19 : 12], tmp_inst[20 : 20], tmp_inst[30 : 25], tmp_inst[24 : 21], 1'b0};
-                end else if (tmp_inst[6 : 0] == 7'b1100011 && bp_pred) begin  // Branch instruction
-                    fet_pc <= fet_pc + {{20{tmp_inst[31]}}, tmp_inst[7 : 7], tmp_inst[30 : 25], tmp_inst[11 : 8], 1'b0};
-                end else begin
-                    fet_pc <= fet_pc + `XLEN'd4;
+        if (rdy) begin
+            if (rst) begin
+                fet_ready         <= 1'b0;
+                fet_inst          <= `XLEN'b0;
+                fet_inst_addr     <= `XLEN'b0;
+                fet_jump_pred     <= 1'b0;
+                fet_icache_enable <= 1'b1;
+                fet_pc            <= `XLEN'b0;
+            end else if (flush) begin
+                fet_ready         <= 1'b0;
+                fet_pc            <= correct_pc;
+                fet_icache_enable <= 1'b1;
+            end else if (!stall && (icache_ready || mem_ready)) begin
+                fet_ready         <= 1'b1;
+                fet_inst          <= tmp_inst;
+                fet_inst_addr     <= fet_pc;
+                fet_jump_pred     <= bp_pred;
+                fet_icache_enable <= 1'b1;
+                if (tmp_inst[1 : 0] == 2'b11) begin
+                    if (tmp_inst[6 : 0] == 7'b1101111) begin  // JAL
+                        fet_pc <= fet_pc + {{12{tmp_inst[31]}}, tmp_inst[19 : 12], tmp_inst[20 : 20], tmp_inst[30 : 25], tmp_inst[24 : 21], 1'b0};
+                    end else if (tmp_inst[6 : 0] == 7'b1100011 && bp_pred) begin  // Branch instruction
+                        fet_pc <= fet_pc + {{20{tmp_inst[31]}}, tmp_inst[7 : 7], tmp_inst[30 : 25], tmp_inst[11 : 8], 1'b0};
+                    end else begin
+                        fet_pc <= fet_pc + `XLEN'd4;
+                    end
+                end else begin  // C extension
+                    if (tmp_inst[1 : 0] == 2'b01 && tmp_inst[14 : 13] == 2'b01) begin  // C.JAL and C.J
+                        fet_pc <= fet_pc + {{21{tmp_inst[12]}}, tmp_inst[8 : 8], tmp_inst[10 : 9], tmp_inst[6 : 6], tmp_inst[7 : 7], tmp_inst[2 : 2], tmp_inst[11 : 11], tmp_inst[5 : 3], 1'b0};
+                    end else if (tmp_inst[1 : 0] == 2'b01 && tmp_inst[15 : 14] == 2'b11) begin  // C.BEQZ and C.BNEZ
+                        fet_pc <= fet_pc + {{24{tmp_inst[12]}}, tmp_inst[6 : 5], tmp_inst[2 : 2], tmp_inst[11 : 10], tmp_inst[4 : 3], 1'b0};
+                    end else begin
+                        fet_pc <= fet_pc + `XLEN'd2;
+                    end
                 end
-            end else begin  // C extension
-                if (tmp_inst[1 : 0] == 2'b01 && tmp_inst[14 : 13] == 2'b01) begin  // C.JAL and C.J
-                    fet_pc <= fet_pc + {{21{tmp_inst[12]}}, tmp_inst[8 : 8], tmp_inst[10 : 9], tmp_inst[6 : 6], tmp_inst[7 : 7], tmp_inst[2 : 2], tmp_inst[11 : 11], tmp_inst[5 : 3], 1'b0};
-                end else if (tmp_inst[1 : 0] == 2'b01 && tmp_inst[15 : 14] == 2'b11) begin  // C.BEQZ and C.BNEZ
-                    fet_pc <= fet_pc + {{24{tmp_inst[12]}}, tmp_inst[6 : 5], tmp_inst[2 : 2], tmp_inst[11 : 10], tmp_inst[4 : 3], 1'b0};
-                end else begin
-                    fet_pc <= fet_pc + `XLEN'd2;
-                end
+            end else begin
+                fet_ready         <= 1'b0;
+                fet_icache_enable <= 1'b0;
             end
-        end else begin
-            fet_ready         <= 1'b0;
-            fet_icache_enable <= 1'b0;
         end
     end
 endmodule

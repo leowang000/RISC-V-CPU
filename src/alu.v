@@ -3,6 +3,8 @@
 module alu (
     // input
     input wire clk,
+    input wire rst,
+    input wire rdy,
     input wire flush,
 
     // from RS
@@ -20,6 +22,7 @@ module alu (
     initial begin
         alu_ready = 1'b0;
         alu_res   = `XLEN'b0;
+        alu_id    = `ROB_SIZE_WIDTH'b0;
     end
 
     function [`XLEN - 1 : 0] calculate;
@@ -48,12 +51,18 @@ module alu (
     endfunction
 
     always @(posedge clk) begin
-        if (flush || !rs_ready) begin
-            alu_ready <= 1'b0;
-        end else begin
-            alu_ready <= 1'b1;
-            alu_res   <= calculate(rs_op, rs_val1, rs_val2);
-            alu_id    <= rs_id;
+        if (rdy) begin
+            if (rst) begin
+                alu_ready <= 1'b0;
+                alu_res   <= `XLEN'b0;
+                alu_id    <= `ROB_SIZE_WIDTH'b0;
+            end else if (flush || !rs_ready) begin
+                alu_ready <= 1'b0;
+            end else begin
+                alu_ready <= 1'b1;
+                alu_res   <= calculate(rs_op, rs_val1, rs_val2);
+                alu_id    <= rs_id;
+            end
         end
     end
 endmodule

@@ -3,6 +3,8 @@
 module branch_predictor (
     // input
     input wire clk,
+    input wire rst,
+    input wire rdy,
 
     // from Fetcher
     input wire [`XLEN - 1 : 0] fet_inst_addr,
@@ -54,15 +56,25 @@ module branch_predictor (
     end
 
     always @(posedge clk) begin
-        if (rob_bp_enable) begin
-            if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] != 2'b11 && rob_bp_jump) begin
-                predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] + 1;
+        if (rdy) begin
+            if (rst) begin
+                for (integer i = 0; i < `BP_SIZE; i = i + 1) begin
+                    predictor[i]       <= 2'b0;
+                    total_counter[i]   <= `XLEN'b0;
+                    correct_counter[i] <= `XLEN'b0;
+                end
+                tmp_total_sum   <= `XLEN'b0;
+                tmp_correct_sum <= `XLEN'b0;
+            end else if (rob_bp_enable) begin
+                if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] != 2'b11 && rob_bp_jump) begin
+                    predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] + 1;
+                end
+                if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] != 2'b00 && !rob_bp_jump) begin
+                    predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] - 1;
+                end
+                total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]]   <= total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] + `XLEN'b1;
+                correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] + (rob_bp_correct ? `XLEN'b1 : `XLEN'b0);
             end
-            if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] != 2'b00 && !rob_bp_jump) begin
-                predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] - 1;
-            end
-            total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]]   <= total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] + `XLEN'b1;
-            correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] + (rob_bp_correct ? `XLEN'b1 : `XLEN'b0);
         end
     end
 endmodule

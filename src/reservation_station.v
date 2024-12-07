@@ -3,6 +3,8 @@
 module reservation_station (
     // input
     input wire clk,
+    input wire rst,
+    input wire rdy,
     input wire flush,
     input wire stall,
 
@@ -185,73 +187,103 @@ module reservation_station (
     end
 
     always @(posedge clk) begin
-        if (flush) begin
-            rs_ready <= 1'b0;
-            for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
-                busy[i] <= 1'b0;
-            end
-        end else begin
-            if (!stall && dec_ready && tmp_inst_should_enter) begin
-                busy[tmp_insert_id] <= 1'b1;
-                id[tmp_insert_id]   <= rob_tail_id;
-                Q1[tmp_insert_id]   <= tmp_new_updated_Q1;
-                V1[tmp_insert_id]   <= tmp_new_updated_V1;
-                Q2[tmp_insert_id]   <= tmp_new_updated_Q2;
-                V2[tmp_insert_id]   <= tmp_new_updated_V2;
-            end
-            if (mem_data_ready) begin
-                for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
-                    if (busy[i]) begin
-                        if (Q1[i] == mem_id) begin  // zero extension: mem_id
-                            Q1[i] <= -`DEPENDENCY_WIDTH'b1;
-                            V1[i] <= mem_data;
-                        end
-                        if (Q2[i] == mem_id) begin  // zero extension: mem_id
-                            Q2[i] <= -`DEPENDENCY_WIDTH'b1;
-                            V2[i] <= mem_data;
-                        end
-                    end
-                end
-            end
-            if (alu_ready) begin
-                for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
-                    if (busy[i]) begin
-                        if (Q1[i] == alu_id) begin  // zero extension: alu_id
-                            Q1[i] <= -`DEPENDENCY_WIDTH'b1;
-                            V1[i] <= alu_res;
-                        end
-                        if (Q2[i] == alu_id) begin  // zero extension: alu_id
-                            Q2[i] <= -`DEPENDENCY_WIDTH'b1;
-                            V2[i] <= alu_res;
-                        end
-                    end
-                end
-            end
-            if (tmp_should_remove) begin
-                rs_ready <= 1'b1;
-                rs_val1  <= V1[tmp_remove_id];
-                rs_val2  <= V2[tmp_remove_id];
-                rs_id    <= id[tmp_remove_id];
-                case (rob_rs_remove_op)
-                    `JALR, `ADD, `ADDI: rs_op <= `ALU_ADD;
-                    `SUB: rs_op <= `ALU_SUB;
-                    `AND, `ANDI: rs_op <= `ALU_AND;
-                    `OR, `ORI: rs_op <= `ALU_OR;
-                    `XOR, `XORI: rs_op <= `ALU_XOR;
-                    `SLL, `SLLI: rs_op <= `ALU_SHL;
-                    `SRL, `SRLI: rs_op <= `ALU_SHR;
-                    `SRA, `SRAI: rs_op <= `ALU_SHRA;
-                    `BEQ: rs_op <= `ALU_EQ;
-                    `BNE: rs_op <= `ALU_NEQ;
-                    `SLT, `SLTI, `BLT: rs_op <= `ALU_LT;
-                    `SLTU, `SLTIU, `BLTU: rs_op <= `ALU_LTU;
-                    `BGE: rs_op <= `ALU_GE;
-                    `BGEU: rs_op <= `ALU_GEU;
-                    default: rs_op <= `ALU_OP_WIDTH'b0;
-                endcase
-                busy[tmp_remove_id] <= 1'b0;
-            end else begin
+        if (rdy) begin
+            if (rst) begin
+                rs_full  <= 1'b0;
                 rs_ready <= 1'b0;
+                rs_op    <= `ALU_OP_WIDTH'b0;
+                rs_val1  <= `XLEN'b0;
+                rs_val2  <= `XLEN'b0;
+                rs_id    <= `ROB_SIZE_WIDTH'b0;
+                for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
+                    busy[i] <= 1'b0;
+                    Q1[i]   <= -`DEPENDENCY_WIDTH'b1;
+                    V1[i]   <= `XLEN'b0;
+                    Q2[i]   <= -`DEPENDENCY_WIDTH'b1;
+                    V2[i]   <= `XLEN'b0;
+                    id[i]   <= `ROB_SIZE_WIDTH'b0;
+                end
+                tmp_insert_break_flag <= 1'b0;
+                tmp_insert_id         <= `RS_SIZE_WIDTH'b0;
+                tmp_remove_break_flag <= 1'b0;
+                tmp_remove_id         <= `RS_SIZE_WIDTH'b0;
+                tmp_should_remove     <= 1'b0;
+                tmp_new_Q1            <= `DEPENDENCY_WIDTH'b0;
+                tmp_new_V1            <= `XLEN'b0;
+                tmp_new_Q2            <= `DEPENDENCY_WIDTH'b0;
+                tmp_new_V2            <= `XLEN'b0;
+                tmp_new_updated_Q1    <= `DEPENDENCY_WIDTH'b0;
+                tmp_new_updated_V1    <= `XLEN'b0;
+                tmp_new_updated_Q2    <= `DEPENDENCY_WIDTH'b0;
+                tmp_new_updated_V2    <= `XLEN'b0;
+            end else if (flush) begin
+                rs_ready <= 1'b0;
+                for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
+                    busy[i] <= 1'b0;
+                end
+            end else begin
+                if (!stall && dec_ready && tmp_inst_should_enter) begin
+                    busy[tmp_insert_id] <= 1'b1;
+                    id[tmp_insert_id]   <= rob_tail_id;
+                    Q1[tmp_insert_id]   <= tmp_new_updated_Q1;
+                    V1[tmp_insert_id]   <= tmp_new_updated_V1;
+                    Q2[tmp_insert_id]   <= tmp_new_updated_Q2;
+                    V2[tmp_insert_id]   <= tmp_new_updated_V2;
+                end
+                if (mem_data_ready) begin
+                    for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
+                        if (busy[i]) begin
+                            if (Q1[i] == mem_id) begin  // zero extension: mem_id
+                                Q1[i] <= -`DEPENDENCY_WIDTH'b1;
+                                V1[i] <= mem_data;
+                            end
+                            if (Q2[i] == mem_id) begin  // zero extension: mem_id
+                                Q2[i] <= -`DEPENDENCY_WIDTH'b1;
+                                V2[i] <= mem_data;
+                            end
+                        end
+                    end
+                end
+                if (alu_ready) begin
+                    for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
+                        if (busy[i]) begin
+                            if (Q1[i] == alu_id) begin  // zero extension: alu_id
+                                Q1[i] <= -`DEPENDENCY_WIDTH'b1;
+                                V1[i] <= alu_res;
+                            end
+                            if (Q2[i] == alu_id) begin  // zero extension: alu_id
+                                Q2[i] <= -`DEPENDENCY_WIDTH'b1;
+                                V2[i] <= alu_res;
+                            end
+                        end
+                    end
+                end
+                if (tmp_should_remove) begin
+                    rs_ready <= 1'b1;
+                    rs_val1  <= V1[tmp_remove_id];
+                    rs_val2  <= V2[tmp_remove_id];
+                    rs_id    <= id[tmp_remove_id];
+                    case (rob_rs_remove_op)
+                        `JALR, `ADD, `ADDI: rs_op <= `ALU_ADD;
+                        `SUB: rs_op <= `ALU_SUB;
+                        `AND, `ANDI: rs_op <= `ALU_AND;
+                        `OR, `ORI: rs_op <= `ALU_OR;
+                        `XOR, `XORI: rs_op <= `ALU_XOR;
+                        `SLL, `SLLI: rs_op <= `ALU_SHL;
+                        `SRL, `SRLI: rs_op <= `ALU_SHR;
+                        `SRA, `SRAI: rs_op <= `ALU_SHRA;
+                        `BEQ: rs_op <= `ALU_EQ;
+                        `BNE: rs_op <= `ALU_NEQ;
+                        `SLT, `SLTI, `BLT: rs_op <= `ALU_LT;
+                        `SLTU, `SLTIU, `BLTU: rs_op <= `ALU_LTU;
+                        `BGE: rs_op <= `ALU_GE;
+                        `BGEU: rs_op <= `ALU_GEU;
+                        default: rs_op <= `ALU_OP_WIDTH'b0;
+                    endcase
+                    busy[tmp_remove_id] <= 1'b0;
+                end else begin
+                    rs_ready <= 1'b0;
+                end
             end
         end
     end

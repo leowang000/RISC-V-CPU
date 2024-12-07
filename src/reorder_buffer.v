@@ -3,8 +3,11 @@
 module reorder_buffer (
     // input
     input wire clk,
+    input wire rst,
+    input wire rdy,
     input wire flush,
     input wire stall,
+    input wire io_buffer_full,
 
     // from ALU
     input wire                           alu_ready,
@@ -94,22 +97,26 @@ module reorder_buffer (
     assign tmp_lsb_front_store  = (!lsb_empty && (lsb_front_op == `SB || lsb_front_op == `SH || lsb_front_op == `SW));
     assign tmp_rob_front_store  = (!tmp_rob_empty && (op[rob_head_id] == `SB || op[rob_head_id] == `SH || op[rob_head_id] == `SW));
     assign tmp_rob_front_branch = (!tmp_rob_empty && (op[rob_head_id] == `BEQ || op[rob_head_id] == `BNE || op[rob_head_id] == `BLT || op[rob_head_id] == `BLTU || op[rob_head_id] == `BGE || op[rob_head_id] == `BGEU));
-    assign tmp_commit           = (!tmp_rob_empty && ready[rob_head_id] && (!tmp_rob_front_store && (mem_busy || rob_mem_enable)));
+    assign tmp_commit           = (!tmp_rob_empty && ready[rob_head_id] && !(tmp_rob_front_store && (mem_busy || rob_mem_enable || io_buffer_full)));
     assign tmp_flush            = (tmp_rob_front_branch ? jump_pred[rob_head_id] != val[rob_head_id][0 : 0] : op[rob_head_id] == `JALR);
     assign tmp_correct_pc       = (tmp_rob_front_branch ? (val[rob_head_id] ? addr[rob_head_id] : inst_addr[rob_head_id] + (c_extension[rob_head_id] ? `XLEN'd2 : `XLEN'd4)) : addr[rob_head_id]);
 
     initial begin
-        rob_head_id    = `ROB_SIZE_WIDTH'b0;
-        rob_tail_id    = `ROB_SIZE_WIDTH'b0;
-        rob_flush      = 1'b0;
-        rob_correct_pc = `XLEN'b0;
-        rob_rf_enable  = 1'b0;
-        rob_rf_rd      = `REG_CNT_WIDTH'b0;
-        rob_rf_val     = `XLEN'b0;
-        rob_mem_enable = 1'b0;
-        rob_mem_op     = `INST_OP_WIDTH'b0;
-        rob_mem_addr   = `XLEN'b0;
-        rob_mem_val    = `XLEN'b0;
+        rob_head_id      = `ROB_SIZE_WIDTH'b0;
+        rob_tail_id      = `ROB_SIZE_WIDTH'b0;
+        rob_flush        = 1'b0;
+        rob_correct_pc   = `XLEN'b0;
+        rob_bp_enable    = 1'b0;
+        rob_bp_inst_addr = `XLEN'b0;
+        rob_bp_jump      = 1'b0;
+        rob_bp_correct   = 1'b0;
+        rob_mem_enable   = 1'b0;
+        rob_mem_op       = `INST_OP_WIDTH'b0;
+        rob_mem_addr     = `XLEN'b0;
+        rob_mem_val      = `XLEN'b0;
+        rob_rf_enable    = 1'b0;
+        rob_rf_rd        = `REG_CNT_WIDTH'b0;
+        rob_rf_val       = `XLEN'b0;
         for (integer i = 0; i < `ROB_SIZE; i = i + 1) begin
             op[i]          = `INST_OP_WIDTH'b0;
             rd[i]          = `REG_CNT_WIDTH'b0;
@@ -123,94 +130,122 @@ module reorder_buffer (
     end
 
     always @(posedge clk) begin
-        if (flush) begin
-            rob_tail_id    <= rob_head_id;
-            rob_rf_enable  <= 1'b0;
-            rob_mem_enable <= 1'b0;
-            rob_flush      <= 1'b0;
-        end else begin
-            if (!stall && dec_ready) begin
-                op[rob_tail_id]          <= dec_op;
-                jump_pred[rob_tail_id]   <= dec_jump_pred;
-                rd[rob_tail_id]          <= dec_rd;
-                inst_addr[rob_tail_id]   <= dec_inst_addr;
-                c_extension[rob_tail_id] <= dec_c_extension;
-                case (dec_op)
-                    `LUI: begin
-                        ready[rob_tail_id] <= 1'b1;
-                        val[rob_tail_id]   <= dec_imm;
-                        addr[rob_tail_id]  <= `XLEN'b0;
-                    end
-                    `AUIPC: begin
-                        ready[rob_tail_id] <= 1'b1;
-                        val[rob_tail_id]   <= dec_inst_addr + dec_imm;
-                        addr[rob_tail_id]  <= `XLEN'b0;
-                    end
-                    `JAL: begin
-                        ready[rob_tail_id] <= 1'b1;
-                        val[rob_tail_id]   <= dec_inst_addr + (dec_c_extension ? `XLEN'd2 : `XLEN'd4);
-                        addr[rob_tail_id]  <= `XLEN'b0;
-                    end
-                    `JALR: begin
-                        ready[rob_tail_id] <= 1'b0;
-                        val[rob_tail_id]   <= dec_inst_addr + (dec_c_extension ? `XLEN'd2 : `XLEN'd4);
-                        addr[rob_tail_id]  <= `XLEN'b0;
-                    end
-                    `BEQ, `BNE, `BLT, `BLTU, `BGE, `BGEU: begin
-                        ready[rob_tail_id] <= 1'b0;
-                        val[rob_tail_id]   <= `XLEN'b0;
-                        addr[rob_tail_id]  <= dec_inst_addr + dec_imm;
-                    end
-                    default: ;
-                endcase
-                rob_tail_id <= rob_tail_id + `ROB_SIZE_WIDTH'b1;
-            end
-            if (mem_data_ready) begin
-                val[mem_id]   <= mem_data;
-                ready[mem_id] <= 1'b1;
-            end
-            if (alu_ready) begin
-                if (op[alu_id] == `JALR) begin
-                    addr[alu_id] <= alu_res;
-                end else begin
-                    val[alu_id] <= alu_res;
+        if (rdy) begin
+            if (rst) begin
+                rob_head_id      <= `ROB_SIZE_WIDTH'b0;
+                rob_tail_id      <= `ROB_SIZE_WIDTH'b0;
+                rob_flush        <= 1'b0;
+                rob_correct_pc   <= `XLEN'b0;
+                rob_bp_enable    <= 1'b0;
+                rob_bp_inst_addr <= `XLEN'b0;
+                rob_bp_jump      <= 1'b0;
+                rob_bp_correct   <= 1'b0;
+                rob_mem_enable   <= 1'b0;
+                rob_mem_op       <= `INST_OP_WIDTH'b0;
+                rob_mem_addr     <= `XLEN'b0;
+                rob_mem_val      <= `XLEN'b0;
+                rob_rf_enable    <= 1'b0;
+                rob_rf_rd        <= `REG_CNT_WIDTH'b0;
+                rob_rf_val       <= `XLEN'b0;
+                for (integer i = 0; i < `ROB_SIZE; i = i + 1) begin
+                    op[i]          <= `INST_OP_WIDTH'b0;
+                    rd[i]          <= `REG_CNT_WIDTH'b0;
+                    val[i]         <= `XLEN'b0;
+                    addr[i]        <= `XLEN'b0;
+                    ready[i]       <= 1'b0;
+                    jump_pred[i]   <= 1'b0;
+                    inst_addr[i]   <= `XLEN'b0;
+                    c_extension[i] <= 1'b0;
                 end
-                ready[alu_id] <= 1'b1;
-            end
-            if (tmp_lsb_front_store && |lsb_front_Q1 && |lsb_front_Q2) begin  // tmp_lsb_front_store && lsb_front_Q1 == -1 && lsb_front_Q2 == -1
-                addr[lsb_front_id]  <= lsb_front_V1;
-                val[lsb_front_id]   <= lsb_front_V2;
-                ready[lsb_front_id] <= 1'b1;
-            end
-            if (!tmp_commit || tmp_rob_front_branch || tmp_rob_front_store) begin
-                rob_rf_enable <= 1'b0;
-            end else begin
-                rob_rf_enable <= 1'b1;
-                rob_rf_rd     <= rd[rob_head_id];
-                rob_rf_val    <= val[rob_head_id];
-            end
-            if (!tmp_commit || !tmp_rob_front_store) begin
+            end else if (flush) begin
+                rob_tail_id    <= rob_head_id;
+                rob_rf_enable  <= 1'b0;
                 rob_mem_enable <= 1'b0;
+                rob_flush      <= 1'b0;
             end else begin
-                rob_mem_enable <= 1'b1;
-                rob_mem_op     <= op[rob_head_id];
-                rob_mem_addr   <= addr[rob_head_id];
-                rob_mem_val    <= val[rob_head_id];
-            end
-            if (tmp_commit) begin
-                rob_flush      <= tmp_flush;
-                rob_correct_pc <= tmp_correct_pc;
-                rob_head_id    <= rob_head_id + `ROB_SIZE_WIDTH'b1;
-            end else begin
-                rob_flush <= 1'b0;
-            end
-            if (tmp_commit && tmp_rob_front_branch) begin
-                rob_bp_enable    <= 1'b1;
-                rob_bp_inst_addr <= inst_addr[rob_head_id];
-                rob_bp_jump      <= val[rob_head_id][0:0];
-                rob_bp_correct   <= !tmp_flush;
-            end else begin
-                rob_bp_enable <= 1'b0;
+                if (!stall && dec_ready) begin
+                    op[rob_tail_id]          <= dec_op;
+                    jump_pred[rob_tail_id]   <= dec_jump_pred;
+                    rd[rob_tail_id]          <= dec_rd;
+                    inst_addr[rob_tail_id]   <= dec_inst_addr;
+                    c_extension[rob_tail_id] <= dec_c_extension;
+                    case (dec_op)
+                        `LUI: begin
+                            ready[rob_tail_id] <= 1'b1;
+                            val[rob_tail_id]   <= dec_imm;
+                            addr[rob_tail_id]  <= `XLEN'b0;
+                        end
+                        `AUIPC: begin
+                            ready[rob_tail_id] <= 1'b1;
+                            val[rob_tail_id]   <= dec_inst_addr + dec_imm;
+                            addr[rob_tail_id]  <= `XLEN'b0;
+                        end
+                        `JAL: begin
+                            ready[rob_tail_id] <= 1'b1;
+                            val[rob_tail_id]   <= dec_inst_addr + (dec_c_extension ? `XLEN'd2 : `XLEN'd4);
+                            addr[rob_tail_id]  <= `XLEN'b0;
+                        end
+                        `JALR: begin
+                            ready[rob_tail_id] <= 1'b0;
+                            val[rob_tail_id]   <= dec_inst_addr + (dec_c_extension ? `XLEN'd2 : `XLEN'd4);
+                            addr[rob_tail_id]  <= `XLEN'b0;
+                        end
+                        `BEQ, `BNE, `BLT, `BLTU, `BGE, `BGEU: begin
+                            ready[rob_tail_id] <= 1'b0;
+                            val[rob_tail_id]   <= `XLEN'b0;
+                            addr[rob_tail_id]  <= dec_inst_addr + dec_imm;
+                        end
+                        default: ;
+                    endcase
+                    rob_tail_id <= rob_tail_id + `ROB_SIZE_WIDTH'b1;
+                end
+                if (mem_data_ready) begin
+                    val[mem_id]   <= mem_data;
+                    ready[mem_id] <= 1'b1;
+                end
+                if (alu_ready) begin
+                    if (op[alu_id] == `JALR) begin
+                        addr[alu_id] <= alu_res;
+                    end else begin
+                        val[alu_id] <= alu_res;
+                    end
+                    ready[alu_id] <= 1'b1;
+                end
+                if (tmp_lsb_front_store && |lsb_front_Q1 && |lsb_front_Q2) begin  // tmp_lsb_front_store && lsb_front_Q1 == -1 && lsb_front_Q2 == -1
+                    addr[lsb_front_id]  <= lsb_front_V1;
+                    val[lsb_front_id]   <= lsb_front_V2;
+                    ready[lsb_front_id] <= 1'b1;
+                end
+                if (!tmp_commit || tmp_rob_front_branch || tmp_rob_front_store) begin
+                    rob_rf_enable <= 1'b0;
+                end else begin
+                    rob_rf_enable <= 1'b1;
+                    rob_rf_rd     <= rd[rob_head_id];
+                    rob_rf_val    <= val[rob_head_id];
+                end
+                if (!tmp_commit || !tmp_rob_front_store) begin
+                    rob_mem_enable <= 1'b0;
+                end else begin
+                    rob_mem_enable <= 1'b1;
+                    rob_mem_op     <= op[rob_head_id];
+                    rob_mem_addr   <= addr[rob_head_id];
+                    rob_mem_val    <= val[rob_head_id];
+                end
+                if (tmp_commit) begin
+                    rob_flush      <= tmp_flush;
+                    rob_correct_pc <= tmp_correct_pc;
+                    rob_head_id    <= rob_head_id + `ROB_SIZE_WIDTH'b1;
+                end else begin
+                    rob_flush <= 1'b0;
+                end
+                if (tmp_commit && tmp_rob_front_branch) begin
+                    rob_bp_enable    <= 1'b1;
+                    rob_bp_inst_addr <= inst_addr[rob_head_id];
+                    rob_bp_jump      <= val[rob_head_id][0:0];
+                    rob_bp_correct   <= !tmp_flush;
+                end else begin
+                    rob_bp_enable <= 1'b0;
+                end
             end
         end
     end

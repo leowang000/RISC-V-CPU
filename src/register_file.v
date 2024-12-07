@@ -3,6 +3,8 @@
 module register_file (
     // input
     input wire clk,
+    input wire rst,
+    input wire rdy,
     input wire flush,
     input wire stall,
 
@@ -42,23 +44,31 @@ module register_file (
     end
 
     always @(posedge clk) begin
-        if (flush) begin
-            for (integer i = 0; i < `REG_CNT; i = i + 1) begin
-                dep[i] <= -`DEPENDENCY_WIDTH'b1;
-            end
-        end else begin
-            if (rob_rf_ready && rob_rf_rd != `REG_CNT_WIDTH'b0) begin
-                val[rob_rf_rd] <= rob_rf_val;
-                if (rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[rob_rf_rd]) begin
-                    dep[rob_rf_rd] <= -`DEPENDENCY_WIDTH'b1;
+        if (rdy) begin
+            if (rst) begin
+                for (integer i = 0; i < `REG_CNT; i = i + 1) begin
+                    val[i] <= `XLEN'b0;
+                    dep[i] <= -`DEPENDENCY_WIDTH'b1;
+                end
+            end else if (flush) begin
+                for (integer i = 0; i < `REG_CNT; i = i + 1) begin
+                    dep[i] <= -`DEPENDENCY_WIDTH'b1;
+                end
+            end else begin
+                if (rob_rf_ready && rob_rf_rd != `REG_CNT_WIDTH'b0) begin
+                    val[rob_rf_rd] <= rob_rf_val;
+                    if (rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[rob_rf_rd]) begin
+                        dep[rob_rf_rd] <= -`DEPENDENCY_WIDTH'b1;
+                    end
+                end
+                if (!stall && dec_ready && dec_rd != 0) begin
+                    case (dec_op)
+                        `BEQ, `BNE, `BLT, `BGE, `BLTU, `SB, `SH, `SW: ;
+                        default: dep[dec_rd] <= {1'b0, rob_tail_id};
+                    endcase
                 end
             end
-            if (!stall && dec_ready && dec_rd != 0) begin
-                case (dec_op)
-                    `BEQ, `BNE, `BLT, `BGE, `BLTU, `SB, `SH, `SW: ;
-                    default: dep[dec_rd] <= {1'b0, rob_tail_id};
-                endcase
-            end
         end
+
     end
 endmodule

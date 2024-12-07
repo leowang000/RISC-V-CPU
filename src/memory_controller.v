@@ -3,6 +3,8 @@
 module memory_controller (
     // input
     input wire clk,
+    input wire rst,
+    input wire rdy,
     input wire flush,
     input wire stall,
 
@@ -153,13 +155,39 @@ module memory_controller (
     end
 
     always @(posedge clk) begin
-        if (flush) begin
-            mem_busy       = 1'b0;
-            mem_inst_ready = 1'b0;
-            mem_data_ready = 1'b0;
-            tmp_load_inst  = 1'b0;
-            tmp_load_data  = 1'b0;
-            tmp_store_data = 1'b0;
+        if (rdy) begin
+            if (rst) begin
+                mem_busy       <= 1'b0;
+                mem_inst_ready <= 1'b0;
+                mem_inst       <= `XLEN'b0;
+                mem_inst_addr  <= `XLEN'b0;
+                mem_data_ready <= 1'b0;
+                mem_data       <= `XLEN'b0;
+                mem_id         <= `ROB_SIZE_WIDTH'b0;
+                mem_ram_data   <= 8'b0;
+                mem_ram_addr   <= `XLEN'b0;
+                mem_ram_wr     <= 1'b0;
+                tmp_load_inst  <= 1'b0;
+                tmp_inst_addr  <= `XLEN'b0;
+                tmp_load_data  <= 1'b0;
+                tmp_store_data <= 1'b0;
+                tmp_addr       <= `XLEN'b0;
+                tmp_val        <= `XLEN'b0;
+                tmp_id         <= `ROB_SIZE_WIDTH'b0;
+                tmp_state      <= 3'b0;
+                tmp_offset     <= 3'b0;
+                tmp_load_res   <= `XLEN'b0;
+            end else if (flush) begin
+                mem_busy       <= 1'b0;
+                mem_inst_ready <= 1'b0;
+                mem_data_ready <= 1'b0;
+                mem_ram_data   <= 8'b0;
+                mem_ram_addr   <= `XLEN'b0;
+                mem_ram_wr     <= 1'b0;
+                tmp_load_inst  <= 1'b0;
+                tmp_load_data  <= 1'b0;
+                tmp_store_data <= 1'b0;
+            end
         end
     end
 endmodule
