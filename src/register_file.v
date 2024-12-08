@@ -16,7 +16,7 @@ module register_file (
     input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs2,
 
     // from ROB
-    input wire                           rob_rf_ready,
+    input wire                           rob_rf_enable,
     input wire [ `REG_CNT_WIDTH - 1 : 0] rob_rf_rd,
     input wire [          `XLEN - 1 : 0] rob_rf_val,
     input wire [`ROB_SIZE_WIDTH - 1 : 0] rob_head_id,
@@ -31,10 +31,10 @@ module register_file (
     reg [            `XLEN - 1 : 0] val[`REG_CNT - 1 : 0];
     reg [`DEPENDENCY_WIDTH - 1 : 0] dep[`REG_CNT - 1 : 0];
 
-    assign rf_val1 = (dec_rs1 == `REG_CNT_WIDTH'b0 ? `XLEN'b0 : (rob_rf_ready && rob_rf_rd == dec_rs1 ? rob_rf_val : val[dec_rs1]));
-    assign rf_val2 = (dec_rs2 == `REG_CNT_WIDTH'b0 ? `XLEN'b0 : (rob_rf_ready && rob_rf_rd == dec_rs2 ? rob_rf_val : val[dec_rs2]));
-    assign rf_dep1 = (dec_rs1 == `REG_CNT_WIDTH'b0 || (rob_rf_ready && rob_rf_rd == dec_rs1 && rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[dec_rs1][`ROB_SIZE_WIDTH-1 : 0]) ? -`DEPENDENCY_WIDTH'b1 : dep[dec_rs1]);
-    assign rf_dep2 = (dec_rs2 == `REG_CNT_WIDTH'b0 || (rob_rf_ready && rob_rf_rd == dec_rs2 && rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[dec_rs2][`ROB_SIZE_WIDTH-1 : 0]) ? -`DEPENDENCY_WIDTH'b1 : dep[dec_rs2]);
+    assign rf_val1 = (dec_rs1 == `REG_CNT_WIDTH'b0 ? `XLEN'b0 : (rob_rf_enable && rob_rf_rd == dec_rs1 ? rob_rf_val : val[dec_rs1]));
+    assign rf_val2 = (dec_rs2 == `REG_CNT_WIDTH'b0 ? `XLEN'b0 : (rob_rf_enable && rob_rf_rd == dec_rs2 ? rob_rf_val : val[dec_rs2]));
+    assign rf_dep1 = (dec_rs1 == `REG_CNT_WIDTH'b0 || (rob_rf_enable && rob_rf_rd == dec_rs1 && rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[dec_rs1][`ROB_SIZE_WIDTH-1 : 0]) ? -`DEPENDENCY_WIDTH'b1 : dep[dec_rs1]);
+    assign rf_dep2 = (dec_rs2 == `REG_CNT_WIDTH'b0 || (rob_rf_enable && rob_rf_rd == dec_rs2 && rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[dec_rs2][`ROB_SIZE_WIDTH-1 : 0]) ? -`DEPENDENCY_WIDTH'b1 : dep[dec_rs2]);
 
     initial begin
         for (integer i = 0; i < `REG_CNT; i = i + 1) begin
@@ -55,7 +55,7 @@ module register_file (
                     dep[i] <= -`DEPENDENCY_WIDTH'b1;
                 end
             end else begin
-                if (rob_rf_ready && rob_rf_rd != `REG_CNT_WIDTH'b0) begin
+                if (rob_rf_enable && rob_rf_rd != `REG_CNT_WIDTH'b0) begin
                     val[rob_rf_rd] <= rob_rf_val;
                     if (rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[rob_rf_rd]) begin
                         dep[rob_rf_rd] <= -`DEPENDENCY_WIDTH'b1;

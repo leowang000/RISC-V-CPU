@@ -63,8 +63,6 @@ module branch_predictor (
                     total_counter[i]   <= `XLEN'b0;
                     correct_counter[i] <= `XLEN'b0;
                 end
-                tmp_total_sum   <= `XLEN'b0;
-                tmp_correct_sum <= `XLEN'b0;
             end else if (rob_bp_enable) begin
                 if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] != 2'b11 && rob_bp_jump) begin
                     predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] + 1;

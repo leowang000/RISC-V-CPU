@@ -23,7 +23,7 @@ module decoder (
     input wire rs_full,
 
     // output
-    output wire                          stall,
+    output wire                          dec_stall,
     output reg                           dec_ready,
     output reg  [`INST_OP_WIDTH - 1 : 0] dec_op,
     output reg                           dec_jump_pred,
@@ -35,6 +35,8 @@ module decoder (
     output reg                           dec_c_extension
 );
     reg tmp_stall;
+
+    assign dec_stall = tmp_stall;
 
     initial begin
         dec_ready       = 1'b0;
@@ -73,10 +75,9 @@ module decoder (
                 dec_imm         <= `XLEN'b0;
                 dec_inst_addr   <= `XLEN'b0;
                 dec_c_extension <= 1'b0;
-                tmp_stall       <= 1'b0;
             end else if (flush) begin
                 dec_ready <= 1'b0;
-            end else if (!stall) begin
+            end else if (!tmp_stall) begin
                 if (!fet_ready) begin
                     dec_ready <= 1'b0;
                 end else begin

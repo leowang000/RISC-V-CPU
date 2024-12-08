@@ -10,7 +10,7 @@ module reservation_station (
 
     // from ALU
     input wire                           alu_ready,
-    input wire                           alu_res,
+    input wire [          `XLEN - 1 : 0] alu_res,
     input wire [`ROB_SIZE_WIDTH - 1 : 0] alu_id,     // the rob id of the instruction being calculated
 
     // from Decoder
@@ -38,17 +38,17 @@ module reservation_station (
     input wire [          `XLEN - 1 : 0] rob_Q1_val,
     input wire                           rob_Q2_ready,
     input wire [          `XLEN - 1 : 0] rob_Q2_val,
-    input wire                           rob_rs_remove_op,
+    input wire [  `ALU_OP_WIDTH - 1 : 0] rob_rs_remove_op,
     input wire [`ROB_SIZE_WIDTH - 1 : 0] rob_tail_id,
 
     // output
-    output wire                           remove_id,  // to ROB
+    output wire [`ROB_SIZE_WIDTH - 1 : 0] rs_remove_id,  // to ROB
     output reg                            rs_full,
-    output reg                            rs_ready,   // to ALU
-    output reg  [  `ALU_OP_WIDTH - 1 : 0] rs_op,      // to ALU
-    output reg  [          `XLEN - 1 : 0] rs_val1,    // to ALU
-    output reg  [          `XLEN - 1 : 0] rs_val2,    // to ALU
-    output reg  [`ROB_SIZE_WIDTH - 1 : 0] rs_id       // to ALU, the rob id of the instruction being calculated
+    output reg                            rs_ready,      // to ALU
+    output reg  [  `ALU_OP_WIDTH - 1 : 0] rs_op,         // to ALU
+    output reg  [          `XLEN - 1 : 0] rs_val1,       // to ALU
+    output reg  [          `XLEN - 1 : 0] rs_val2,       // to ALU
+    output reg  [`ROB_SIZE_WIDTH - 1 : 0] rs_id          // to ALU, the rob id of the instruction being calculated
 );
     reg                              busy                  [`RS_SIZE - 1 : 0];
     reg  [`DEPENDENCY_WIDTH - 1 : 0] Q1                    [`RS_SIZE - 1 : 0];
@@ -73,6 +73,7 @@ module reservation_station (
     reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q2;
     reg  [            `XLEN - 1 : 0] tmp_new_updated_V2;
 
+    assign rs_remove_id          = tmp_remove_id;
     assign tmp_inst_should_enter = (dec_op != `LUI && dec_op != `AUIPC && dec_op != `JAL && dec_op != `LB && dec_op != `LH && dec_op != `LW && dec_op != `LBU && dec_op != `LHU && dec_op != `SB && dec_op != `SH && dec_op != `SW);
     assign tmp_two_op            = (dec_op != `JALR && dec_op != `ADDI && dec_op != `SLTI && dec_op != `SLTIU && dec_op != `XORI && dec_op != `ORI && dec_op != `ANDI && dec_op != `SLLI && dec_op != `SRLI && dec_op != `SRAI);
 
@@ -189,7 +190,6 @@ module reservation_station (
     always @(posedge clk) begin
         if (rdy) begin
             if (rst) begin
-                rs_full  <= 1'b0;
                 rs_ready <= 1'b0;
                 rs_op    <= `ALU_OP_WIDTH'b0;
                 rs_val1  <= `XLEN'b0;
@@ -203,19 +203,6 @@ module reservation_station (
                     V2[i]   <= `XLEN'b0;
                     id[i]   <= `ROB_SIZE_WIDTH'b0;
                 end
-                tmp_insert_break_flag <= 1'b0;
-                tmp_insert_id         <= `RS_SIZE_WIDTH'b0;
-                tmp_remove_break_flag <= 1'b0;
-                tmp_remove_id         <= `RS_SIZE_WIDTH'b0;
-                tmp_should_remove     <= 1'b0;
-                tmp_new_Q1            <= `DEPENDENCY_WIDTH'b0;
-                tmp_new_V1            <= `XLEN'b0;
-                tmp_new_Q2            <= `DEPENDENCY_WIDTH'b0;
-                tmp_new_V2            <= `XLEN'b0;
-                tmp_new_updated_Q1    <= `DEPENDENCY_WIDTH'b0;
-                tmp_new_updated_V1    <= `XLEN'b0;
-                tmp_new_updated_Q2    <= `DEPENDENCY_WIDTH'b0;
-                tmp_new_updated_V2    <= `XLEN'b0;
             end else if (flush) begin
                 rs_ready <= 1'b0;
                 for (integer i = 0; i < `RS_SIZE; i = i + 1) begin

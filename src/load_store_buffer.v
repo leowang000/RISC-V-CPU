@@ -37,7 +37,7 @@ module load_store_buffer (
     input wire [`DEPENDENCY_WIDTH - 1 : 0] rf_dep2,  // dependency of register dec_rs2
 
     // from ROB
-    input wire                           rob_store_enable,
+    input wire                           rob_mem_enable,
     input wire                           rob_Q1_ready,
     input wire [          `XLEN - 1 : 0] rob_Q1_val,
     input wire                           rob_Q2_ready,
@@ -47,16 +47,16 @@ module load_store_buffer (
     // output
     output wire                             lsb_full,
     output wire                             lsb_empty,
-    output wire [   `INST_OP_WIDTH - 1 : 0] lsb_front_op,  // to ROB
-    output wire [`DEPENDENCY_WIDTH - 1 : 0] lsb_front_Q1,  // to ROB
-    output wire [            `XLEN - 1 : 0] lsb_front_V1,  // to ROB
-    output wire [`DEPENDENCY_WIDTH - 1 : 0] lsb_front_Q2,  // to ROB
-    output wire [            `XLEN - 1 : 0] lsb_front_V2,  // to ROB
-    output wire [  `ROB_SIZE_WIDTH - 1 : 0] lsb_front_id,  // to ROB
-    output reg                              lsb_ready,     // to Memory Controller
-    output reg  [   `INST_OP_WIDTH - 1 : 0] lsb_op,        // to Memory Controller
-    output reg  [            `XLEN - 1 : 0] lsb_addr,      // to Memory Controller
-    output reg  [  `ROB_SIZE_WIDTH - 1 : 0] lsb_id         // to Memory Controller
+    output wire [   `INST_OP_WIDTH - 1 : 0] lsb_front_op,    // to ROB
+    output wire [`DEPENDENCY_WIDTH - 1 : 0] lsb_front_Q1,    // to ROB
+    output wire [            `XLEN - 1 : 0] lsb_front_V1,    // to ROB
+    output wire [`DEPENDENCY_WIDTH - 1 : 0] lsb_front_Q2,    // to ROB
+    output wire [            `XLEN - 1 : 0] lsb_front_V2,    // to ROB
+    output wire [  `ROB_SIZE_WIDTH - 1 : 0] lsb_front_id,    // to ROB
+    output reg                              lsb_mem_enable,  // to Memory Controller
+    output reg  [   `INST_OP_WIDTH - 1 : 0] lsb_mem_op,      // to Memory Controller
+    output reg  [            `XLEN - 1 : 0] lsb_mem_addr,    // to Memory Controller
+    output reg  [  `ROB_SIZE_WIDTH - 1 : 0] lsb_mem_id       // to Memory Controller
 );
     reg  [   `INST_OP_WIDTH - 1 : 0] op                 [`LSB_SIZE - 1 : 0];
     reg  [`DEPENDENCY_WIDTH - 1 : 0] Q1                 [`LSB_SIZE - 1 : 0];
@@ -91,13 +91,13 @@ module load_store_buffer (
     assign tmp_front_load   = (!lsb_empty && (lsb_front_op == `LB || lsb_front_op == `LH || lsb_front_op == `LW || lsb_front_op == `LBU || lsb_front_op == `LHU));
     assign tmp_new_load     = (dec_op == `LB || dec_op == `LH || dec_op == `LW || dec_op == `LBU || dec_op == `LHU);
     assign tmp_new_store    = (dec_op == `SB || dec_op == `SH || dec_op == `SW);
-    assign tmp_dequeue_load = (tmp_front_load && !mem_busy && !lsb_ready && |lsb_front_Q1 && !(lsb_front_V1 == `XLEN'h30000 && io_buffer_full));  // lsb_front_Q1 == -1
+    assign tmp_dequeue_load = (tmp_front_load && !mem_busy && !lsb_mem_enable && |lsb_front_Q1 && !(lsb_front_V1 == `XLEN'h30000 && io_buffer_full));  // lsb_front_Q1 == -1
 
     initial begin
-        lsb_ready = 1'b0;
-        lsb_op    = `INST_OP_WIDTH'b0;
-        lsb_addr  = `XLEN'b0;
-        lsb_id    = `ROB_SIZE_WIDTH'b0;
+        lsb_mem_enable = 1'b0;
+        lsb_mem_op     = `INST_OP_WIDTH'b0;
+        lsb_mem_addr   = `XLEN'b0;
+        lsb_mem_id     = `ROB_SIZE_WIDTH'b0;
         for (integer i = 0; i < `LSB_SIZE; i = i + 1) begin
             op[i] = `INST_OP_WIDTH'b0;
             Q1[i] = -`DEPENDENCY_WIDTH'b1;
@@ -176,10 +176,10 @@ module load_store_buffer (
     always @(posedge clk) begin
         if (rdy) begin
             if (rst) begin
-                lsb_ready <= 1'b0;
-                lsb_op    <= `INST_OP_WIDTH'b0;
-                lsb_addr  <= `XLEN'b0;
-                lsb_id    <= `ROB_SIZE_WIDTH'b0;
+                lsb_mem_enable <= 1'b0;
+                lsb_mem_op     <= `INST_OP_WIDTH'b0;
+                lsb_mem_addr   <= `XLEN'b0;
+                lsb_mem_id     <= `ROB_SIZE_WIDTH'b0;
                 for (integer i = 0; i < `LSB_SIZE; i = i + 1) begin
                     op[i] <= `INST_OP_WIDTH'b0;
                     Q1[i] <= -`DEPENDENCY_WIDTH'b1;
@@ -188,19 +188,11 @@ module load_store_buffer (
                     V2[i] <= `XLEN'b0;
                     id[i] <= `ROB_SIZE_WIDTH'b0;
                 end
-                head_id            <= `LSB_SIZE_WIDTH'b0;
-                tail_id            <= `LSB_SIZE_WIDTH'b0;
-                tmp_new_Q1         <= `DEPENDENCY_WIDTH'b0;
-                tmp_new_V1         <= `XLEN'b0;
-                tmp_new_Q2         <= `DEPENDENCY_WIDTH'b0;
-                tmp_new_V2         <= `XLEN'b0;
-                tmp_new_updated_Q1 <= `DEPENDENCY_WIDTH'b0;
-                tmp_new_updated_V1 <= `XLEN'b0;
-                tmp_new_updated_Q2 <= `DEPENDENCY_WIDTH'b0;
-                tmp_new_updated_V2 <= `XLEN'b0;
+                head_id <= `LSB_SIZE_WIDTH'b0;
+                tail_id <= `LSB_SIZE_WIDTH'b0;
             end else if (flush) begin
-                tail_id   <= head_id;
-                lsb_ready <= 1'b0;
+                tail_id        <= head_id;
+                lsb_mem_enable <= 1'b0;
             end else begin
                 if (!stall && dec_ready && (tmp_new_store || tmp_new_load)) begin
                     op[tail_id] <= dec_op;
@@ -235,11 +227,11 @@ module load_store_buffer (
                         end
                     end
                 end
-                lsb_ready <= tmp_dequeue_load;
-                lsb_op    <= lsb_front_op;
-                lsb_addr  <= lsb_front_V1;
-                lsb_id    <= lsb_front_id;
-                if (tmp_dequeue_load || rob_store_enable) begin
+                lsb_mem_enable <= tmp_dequeue_load;
+                lsb_mem_op     <= op[head_id];
+                lsb_mem_addr   <= V1[head_id];
+                lsb_mem_id     <= id[head_id];
+                if (tmp_dequeue_load || rob_mem_enable) begin
                     head_id <= head_id + `LSB_SIZE_WIDTH'b1;
                 end
             end

@@ -16,11 +16,11 @@ module fetcher (
     input wire [`XLEN - 1 : 0] icache_inst,
 
     // from Memory Controller
-    input wire                 mem_ready,
+    input wire                 mem_inst_ready,
     input wire [`XLEN - 1 : 0] mem_inst,
 
     // from ROB
-    input wire [`XLEN - 1 : 0] correct_pc,
+    input wire [`XLEN - 1 : 0] rob_correct_pc,
 
     // output
     output reg                 fet_ready,          // to Decoder
@@ -54,9 +54,9 @@ module fetcher (
                 fet_pc            <= `XLEN'b0;
             end else if (flush) begin
                 fet_ready         <= 1'b0;
-                fet_pc            <= correct_pc;
+                fet_pc            <= rob_correct_pc;
                 fet_icache_enable <= 1'b1;
-            end else if (!stall && (icache_ready || mem_ready)) begin
+            end else if (!stall && (icache_ready || mem_inst_ready)) begin
                 fet_ready         <= 1'b1;
                 fet_inst          <= tmp_inst;
                 fet_inst_addr     <= fet_pc;
