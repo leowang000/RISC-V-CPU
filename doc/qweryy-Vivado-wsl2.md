@@ -12,7 +12,7 @@
 
 ### 将 `.bit` 文件写入板中
 
-在使用数据线连接好 FPGA 板后根据助教的文档操作即可。
+在使用数据线连接好 FPGA 板后根据`doc/vivadoDemo.pdf`操作即可（从`Run test`开始的教程无需参考，只参考如何写入`.bit`文件）。
 
 ### 连接 FPGA 板至 WSL2
 
@@ -42,7 +42,7 @@
 
     ![img3](attach/fig3.png)
 
-### 修改 `run_test_fpga.sh` 的端口
+### 修改 `Makefile` 的端口`fpga_device`
 
 与 WSL1 不同，应为 `/dev/ttyUSB1`（或者可能为其它数字，可以通过 attach 前后 `ls /dev/` 大致辨别）。
 
@@ -59,7 +59,15 @@
     
     不过在该种方法下，每次重新连接设备时都要执行一遍。
 
-之后理论上便可成功执行 `./run_test_fpga.sh` 来测试你的硬件代码。
+### 测试
+先在`fpga/`文件夹下运行
+```shell
+make fpga
+```
+然后便可测试你的硬件代码，在仓库根目录下运行
+```shell
+make run_fpga
+```
 
 ### 断开连接（或需要 reprogram 时）
 

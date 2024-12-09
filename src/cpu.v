@@ -1,17 +1,7 @@
 // RISCV32 CPU top module
 // port modification allowed for debugging purposes
 
-`include "alu.v"
-`include "branch_predictor.v"
-`include "decoder.v"
-`include "fetcher.v"
 `include "global_params.v"
-`include "icache.v"
-`include "load_store_buffer.v"
-`include "memory_controller.v"
-`include "register_file.v"
-`include "reorder_buffer.v"
-`include "reservation_station.v"
 
 module cpu (
     input wire clk_in,  // system clock signal
