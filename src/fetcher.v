@@ -31,6 +31,7 @@ module fetcher (
     output reg [`XLEN - 1 : 0] fet_pc              // to Icache
 );
     wire [`XLEN - 1 : 0] tmp_inst;
+    reg                  tmp_work;
 
     assign tmp_inst = (icache_ready ? icache_inst : mem_inst);
 
@@ -39,19 +40,24 @@ module fetcher (
         fet_inst          = `XLEN'b0;
         fet_inst_addr     = `XLEN'b0;
         fet_jump_pred     = 1'b0;
-        fet_icache_enable = 1'b1;
+        fet_icache_enable = 1'b0;
         fet_pc            = `XLEN'b0;
+        tmp_work          = 1'b0;
     end
 
     always @(posedge clk) begin
         if (rdy) begin
-            if (rst) begin
+            if (rst == 1'b1) begin // in the first cycle after the cpu starts working, rst == 1'bx
                 fet_ready         <= 1'b0;
                 fet_inst          <= `XLEN'b0;
                 fet_inst_addr     <= `XLEN'b0;
                 fet_jump_pred     <= 1'b0;
-                fet_icache_enable <= 1'b1;
+                fet_icache_enable <= 1'b0;
                 fet_pc            <= `XLEN'b0;
+                tmp_work          <= 1'b0;
+            end else if (!tmp_work) begin
+                fet_icache_enable <= 1'b1;
+                tmp_work          <= 1'b1;
             end else if (flush) begin
                 fet_ready         <= 1'b0;
                 fet_pc            <= rob_correct_pc;

@@ -96,6 +96,9 @@ module icache (
                     tmp_mem_enable    <= 1'b0;
                     tmp_inst_addr     <= `XLEN'b0;
                 end
+                if (icache_mem_enable) begin
+                    icache_mem_enable <= 1'b0;
+                end
             end
         end
     end
