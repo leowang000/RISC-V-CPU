@@ -48,7 +48,7 @@ module reservation_station (
     output reg  [  `ALU_OP_WIDTH - 1 : 0] rs_op,         // to ALU
     output reg  [          `XLEN - 1 : 0] rs_val1,       // to ALU
     output reg  [          `XLEN - 1 : 0] rs_val2,       // to ALU
-    output reg  [`ROB_SIZE_WIDTH - 1 : 0] rs_id          // to ALU, the rob id of the instruction being calculated
+    output reg  [`ROB_SIZE_WIDTH - 1 : 0] rs_id          // to ALU; the rob id of the instruction being calculated
 );
     reg                              busy                  [`RS_SIZE - 1 : 0];
     reg  [`DEPENDENCY_WIDTH - 1 : 0] Q1                    [`RS_SIZE - 1 : 0];

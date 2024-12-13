@@ -91,7 +91,7 @@ module load_store_buffer (
     assign tmp_front_load   = (!lsb_empty && (lsb_front_op == `LB || lsb_front_op == `LH || lsb_front_op == `LW || lsb_front_op == `LBU || lsb_front_op == `LHU));
     assign tmp_new_load     = (dec_op == `LB || dec_op == `LH || dec_op == `LW || dec_op == `LBU || dec_op == `LHU);
     assign tmp_new_store    = (dec_op == `SB || dec_op == `SH || dec_op == `SW);
-    assign tmp_dequeue_load = (tmp_front_load && !mem_busy && !lsb_mem_enable && |lsb_front_Q1 && !(lsb_front_V1 == `XLEN'h30000 && io_buffer_full));  // lsb_front_Q1 == -1
+    assign tmp_dequeue_load = (tmp_front_load && !mem_busy && |lsb_front_Q1 && !(lsb_front_V1 == `XLEN'h30000 && io_buffer_full));  // lsb_front_Q1 == -1
 
     initial begin
         lsb_mem_enable = 1'b0;

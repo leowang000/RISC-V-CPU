@@ -43,6 +43,7 @@ module cpu (
     wire                             dec_c_extension;
 
     // Fetcher
+    wire                             fet_mem_enable;
     wire                             fet_ready;
     wire [            `XLEN - 1 : 0] fet_inst;
     wire [            `XLEN - 1 : 0] fet_inst_addr;
@@ -53,8 +54,6 @@ module cpu (
     // Icache
     wire                             icache_ready;
     wire [            `XLEN - 1 : 0] icache_inst;
-    wire                             icache_mem_enable;
-    wire [            `XLEN - 1 : 0] icache_inst_addr;
 
     // LSB
     wire                             lsb_full;
@@ -72,11 +71,12 @@ module cpu (
 
     // Memory Controller
     wire                             mem_busy;
-    wire                             mem_inst_ready;
+    wire                             mem_fet_busy;
     wire [            `XLEN - 1 : 0] mem_inst;
+    wire [            `XLEN - 1 : 0] mem_data;
+    wire                             mem_inst_ready;
     wire [            `XLEN - 1 : 0] mem_inst_addr;
     wire                             mem_data_ready;
-    wire [            `XLEN - 1 : 0] mem_data;
     wire [  `ROB_SIZE_WIDTH - 1 : 0] mem_id;
 
     // RF
@@ -182,9 +182,11 @@ module cpu (
         .bp_pred          (bp_pred),
         .icache_ready     (icache_ready),
         .icache_inst      (icache_inst),
+        .mem_fet_busy     (mem_fet_busy),
         .mem_inst_ready   (mem_inst_ready),
         .mem_inst         (mem_inst),
         .rob_correct_pc   (rob_correct_pc),
+        .fet_mem_enable   (fet_mem_enable),
         .fet_ready        (fet_ready),
         .fet_inst         (fet_inst),
         .fet_inst_addr    (fet_inst_addr),
@@ -206,9 +208,7 @@ module cpu (
         .mem_inst         (mem_inst),
         .mem_inst_addr    (mem_inst_addr),
         .icache_ready     (icache_ready),
-        .icache_inst      (icache_inst),
-        .icache_mem_enable(icache_mem_enable),
-        .icache_inst_addr (icache_inst_addr)
+        .icache_inst      (icache_inst)
     );
 
     load_store_buffer my_lsb (
@@ -258,32 +258,33 @@ module cpu (
     );
 
     memory_controller my_mem (
-        .clk              (clk_in),
-        .rst              (rst_in),
-        .rdy              (rdy_in),
-        .flush            (flush),
-        .stall            (stall),
-        .icache_mem_enable(icache_mem_enable),
-        .icache_inst_addr (icache_inst_addr),
-        .lsb_mem_enable   (lsb_mem_enable),
-        .lsb_mem_op       (lsb_mem_op),
-        .lsb_mem_addr     (lsb_mem_addr),
-        .lsb_mem_id       (lsb_mem_id),
-        .ram_data         (mem_din),
-        .rob_mem_enable   (rob_bp_enable),
-        .rob_mem_op       (rob_mem_op),
-        .rob_mem_addr     (rob_mem_addr),
-        .rob_mem_val      (rob_mem_val),
-        .mem_busy         (mem_busy),
-        .mem_inst_ready   (mem_inst_ready),
-        .mem_inst         (mem_inst),
-        .mem_inst_addr    (mem_inst_addr),
-        .mem_data_ready   (mem_data_ready),
-        .mem_data         (mem_data),
-        .mem_id           (mem_id),
-        .mem_ram_data     (mem_dout),
-        .mem_ram_addr     (mem_a),
-        .mem_ram_wr       (mem_wr)
+        .clk           (clk_in),
+        .rst           (rst_in),
+        .rdy           (rdy_in),
+        .flush         (flush),
+        .stall         (stall),
+        .fet_mem_enable(fet_mem_enable),
+        .fet_pc        (fet_pc),
+        .lsb_mem_enable(lsb_mem_enable),
+        .lsb_mem_op    (lsb_mem_op),
+        .lsb_mem_addr  (lsb_mem_addr),
+        .lsb_mem_id    (lsb_mem_id),
+        .ram_data      (mem_din),
+        .rob_mem_enable(rob_mem_enable),
+        .rob_mem_op    (rob_mem_op),
+        .rob_mem_addr  (rob_mem_addr),
+        .rob_mem_val   (rob_mem_val),
+        .mem_busy      (mem_busy),
+        .mem_fet_busy  (mem_fet_busy),
+        .mem_inst      (mem_inst),
+        .mem_data      (mem_data),
+        .mem_inst_ready(mem_inst_ready),
+        .mem_inst_addr (mem_inst_addr),
+        .mem_data_ready(mem_data_ready),
+        .mem_id        (mem_id),
+        .mem_ram_data  (mem_dout),
+        .mem_ram_addr  (mem_a),
+        .mem_ram_wr    (mem_wr)
     );
 
     register_file my_rf (

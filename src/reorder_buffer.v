@@ -97,7 +97,7 @@ module reorder_buffer (
     assign tmp_lsb_front_store  = (!lsb_empty && (lsb_front_op == `SB || lsb_front_op == `SH || lsb_front_op == `SW));
     assign tmp_rob_front_store  = (!tmp_rob_empty && (op[rob_head_id] == `SB || op[rob_head_id] == `SH || op[rob_head_id] == `SW));
     assign tmp_rob_front_branch = (!tmp_rob_empty && (op[rob_head_id] == `BEQ || op[rob_head_id] == `BNE || op[rob_head_id] == `BLT || op[rob_head_id] == `BLTU || op[rob_head_id] == `BGE || op[rob_head_id] == `BGEU));
-    assign tmp_commit           = (!tmp_rob_empty && ready[rob_head_id] && !(tmp_rob_front_store && (mem_busy || rob_mem_enable || io_buffer_full)));
+    assign tmp_commit           = (!tmp_rob_empty && ready[rob_head_id] && !(tmp_rob_front_store && (mem_busy || (addr[rob_head_id] == `XLEN'h30000 && io_buffer_full))));
     assign tmp_flush            = (tmp_rob_front_branch ? jump_pred[rob_head_id] != val[rob_head_id][0 : 0] : op[rob_head_id] == `JALR);
     assign tmp_correct_pc       = (tmp_rob_front_branch ? (val[rob_head_id] ? addr[rob_head_id] : inst_addr[rob_head_id] + (c_extension[rob_head_id] ? `XLEN'd2 : `XLEN'd4)) : addr[rob_head_id]);
 
@@ -195,7 +195,11 @@ module reorder_buffer (
                             val[rob_tail_id]   <= `XLEN'b0;
                             addr[rob_tail_id]  <= dec_inst_addr + dec_imm;
                         end
-                        default: ;
+                        default: begin
+                            ready[rob_tail_id] <= 1'b0;
+                            val[rob_tail_id]   <= `XLEN'b0;
+                            addr[rob_tail_id]  <= `XLEN'b0;
+                        end
                     endcase
                     rob_tail_id <= rob_tail_id + `ROB_SIZE_WIDTH'b1;
                 end

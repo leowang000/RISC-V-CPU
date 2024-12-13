@@ -8,9 +8,9 @@ module memory_controller (
     input wire flush,
     input wire stall,
 
-    // from Icache
-    input wire                 icache_mem_enable,
-    input wire [`XLEN - 1 : 0] icache_inst_addr,
+    // from Fetcher
+    input wire                 fet_mem_enable,
+    input wire [`XLEN - 1 : 0] fet_pc,
 
     // from LSB
     input wire                           lsb_mem_enable,
@@ -28,9 +28,10 @@ module memory_controller (
     input wire [         `XLEN - 1 : 0] rob_mem_val,
 
     // output
+    output wire                           mem_busy,
+    output wire                           mem_fet_busy,    // to Fetcher, avoiding wire dependency cycle
     output wire [          `XLEN - 1 : 0] mem_inst,        // inst output
     output wire [          `XLEN - 1 : 0] mem_data,        // load output
-    output reg                            mem_busy,
     output reg                            mem_inst_ready,  // inst output
     output reg  [          `XLEN - 1 : 0] mem_inst_addr,   // inst output
     output reg                            mem_data_ready,  // load output
@@ -39,12 +40,13 @@ module memory_controller (
     output reg  [          `XLEN - 1 : 0] mem_ram_addr,    // to RAM
     output reg                            mem_ram_wr       // to RAM
 );
-    localparam STATE_WORD = 3'b100;
-    localparam STATE_HALF = 3'b010;
-    localparam STATE_BYTE = 3'b001;
+    localparam STATE_WORD = 2'b11;
+    localparam STATE_HALF = 2'b01;
+    localparam STATE_BYTE = 2'b00;
 
     wire                           tmp_mem_inst_ready;
-    wire                           tmp_mem_inst_about_ready;
+    wire [          `XLEN - 1 : 0] tmp_cur_load_res;
+    reg                            tmp_busy;
     reg                            tmp_load_inst;
     reg  [          `XLEN - 1 : 0] tmp_inst_addr;
     reg                            tmp_load_data;
@@ -52,77 +54,81 @@ module memory_controller (
     reg  [          `XLEN - 1 : 0] tmp_addr;
     reg  [          `XLEN - 1 : 0] tmp_val;
     reg  [`ROB_SIZE_WIDTH - 1 : 0] tmp_id;
-    reg  [                  2 : 0] tmp_state;
-    reg  [                  2 : 0] tmp_offset;
-    reg  [          `XLEN - 1 : 0] tmp_load_res;
+    reg  [                  1 : 0] tmp_state;
+    reg  [                  1 : 0] tmp_offset;
+    reg  [                 23 : 0] tmp_load_res;
+    reg  [                  1 : 0] tmp_last_offset;
 
-    assign mem_inst                 = (mem_inst_ready ? tmp_load_res : `XLEN'b0);
-    assign mem_data                 = (mem_data_ready ? tmp_load_res : `XLEN'b0);
-    assign tmp_mem_inst_ready       = ((tmp_offset == 3'd2 && tmp_load_res[1 : 0] != 2'b11) || (tmp_offset == 3'd4 && tmp_load_res[1 : 0] == 2'b11));
-    assign tmp_mem_inst_about_ready = ((tmp_offset == 3'd1 && ram_data[1 : 0] != 2'b11) || (tmp_offset == 3'd3 && tmp_load_res[1 : 0] == 2'b11));
+    assign tmp_mem_inst_ready = ((tmp_offset == STATE_HALF && ram_data[1 : 0] != 2'b11) || (tmp_offset == STATE_WORD && tmp_load_res[1 : 0] == 2'b11));
+    assign tmp_cur_load_res   = (tmp_last_offset == STATE_BYTE ? {24'b0, ram_data} : (tmp_last_offset == STATE_HALF ? {16'b0, ram_data, tmp_load_res[7 : 0]} : {ram_data, tmp_load_res}));
+    assign mem_busy           = (fet_mem_enable || lsb_mem_enable || rob_mem_enable || tmp_busy);
+    assign mem_fet_busy       = tmp_busy;
+    assign mem_inst           = (mem_inst_ready ? tmp_cur_load_res : `XLEN'b0);
+    assign mem_data           = (mem_data_ready ? tmp_cur_load_res : `XLEN'b0);
 
     initial begin
-        mem_busy       = 1'b0;
-        mem_inst_ready = 1'b0;
-        mem_inst_addr  = `XLEN'b0;
-        mem_data_ready = 1'b0;
-        mem_id         = `ROB_SIZE_WIDTH'b0;
-        mem_ram_data   = 8'b0;
-        mem_ram_addr   = `XLEN'b0;
-        mem_ram_wr     = 1'b0;
-        tmp_load_inst  = 1'b0;
-        tmp_inst_addr  = `XLEN'b0;
-        tmp_load_data  = 1'b0;
-        tmp_store_data = 1'b0;
-        tmp_addr       = `XLEN'b0;
-        tmp_val        = `XLEN'b0;
-        tmp_id         = `ROB_SIZE_WIDTH'b0;
-        tmp_state      = 3'b0;
-        tmp_offset     = 3'b0;
-        tmp_load_res   = `XLEN'b0;
+        mem_inst_ready  = 1'b0;
+        mem_inst_addr   = `XLEN'b0;
+        mem_data_ready  = 1'b0;
+        mem_id          = `ROB_SIZE_WIDTH'b0;
+        mem_ram_data    = 8'b0;
+        mem_ram_addr    = `XLEN'b0;
+        mem_ram_wr      = 1'b0;
+        tmp_busy        = 1'b0;
+        tmp_load_inst   = 1'b0;
+        tmp_inst_addr   = `XLEN'b0;
+        tmp_load_data   = 1'b0;
+        tmp_store_data  = 1'b0;
+        tmp_addr        = `XLEN'b0;
+        tmp_val         = `XLEN'b0;
+        tmp_id          = `ROB_SIZE_WIDTH'b0;
+        tmp_state       = 2'b0;
+        tmp_offset      = 2'b0;
+        tmp_load_res    = `XLEN'b0;
+        tmp_last_offset = 2'b0;
     end
-
 
     always @(posedge clk) begin
         if (rdy) begin
             if (rst) begin
-                mem_busy       <= 1'b0;
-                mem_inst_ready <= 1'b0;
-                mem_inst_addr  <= `XLEN'b0;
-                mem_data_ready <= 1'b0;
-                mem_id         <= `ROB_SIZE_WIDTH'b0;
-                mem_ram_data   <= 8'b0;
-                mem_ram_addr   <= `XLEN'b0;
-                mem_ram_wr     <= 1'b0;
-                tmp_load_inst  <= 1'b0;
-                tmp_inst_addr  <= `XLEN'b0;
-                tmp_load_data  <= 1'b0;
-                tmp_store_data <= 1'b0;
-                tmp_addr       <= `XLEN'b0;
-                tmp_val        <= `XLEN'b0;
-                tmp_id         <= `ROB_SIZE_WIDTH'b0;
-                tmp_state      <= 3'b0;
-                tmp_offset     <= 3'b0;
-                tmp_load_res   <= `XLEN'b0;
+                mem_inst_ready  <= 1'b0;
+                mem_inst_addr   <= `XLEN'b0;
+                mem_data_ready  <= 1'b0;
+                mem_id          <= `ROB_SIZE_WIDTH'b0;
+                mem_ram_data    <= 8'b0;
+                mem_ram_addr    <= `XLEN'b0;
+                mem_ram_wr      <= 1'b0;
+                tmp_busy        <= 1'b0;
+                tmp_load_inst   <= 1'b0;
+                tmp_inst_addr   <= `XLEN'b0;
+                tmp_load_data   <= 1'b0;
+                tmp_store_data  <= 1'b0;
+                tmp_addr        <= `XLEN'b0;
+                tmp_val         <= `XLEN'b0;
+                tmp_id          <= `ROB_SIZE_WIDTH'b0;
+                tmp_state       <= 2'b0;
+                tmp_offset      <= 2'b0;
+                tmp_load_res    <= `XLEN'b0;
+                tmp_last_offset <= 2'b0;
             end else if (flush) begin
-                mem_busy       <= 1'b0;
                 mem_inst_ready <= 1'b0;
                 mem_data_ready <= 1'b0;
                 mem_ram_data   <= 8'b0;
                 mem_ram_addr   <= `XLEN'b0;
                 mem_ram_wr     <= 1'b0;
+                tmp_busy       <= 1'b0;
                 tmp_load_inst  <= 1'b0;
                 tmp_load_data  <= 1'b0;
                 tmp_store_data <= 1'b0;
             end else if (!stall) begin
-                if (icache_mem_enable || lsb_mem_enable || rob_mem_enable) begin
-                    mem_busy     <= 1'b1;
-                    tmp_offset   <= 3'd0;
+                if (fet_mem_enable || lsb_mem_enable || rob_mem_enable) begin
+                    tmp_busy     <= 1'b1;
+                    tmp_offset   <= 2'd0;
                     tmp_load_res <= `XLEN'b0;
                 end
-                if (icache_mem_enable) begin
+                if (fet_mem_enable) begin
                     tmp_load_inst <= 1'b1;
-                    tmp_inst_addr <= icache_inst_addr;
+                    tmp_inst_addr <= fet_pc;
                 end
                 if (lsb_mem_enable) begin
                     tmp_load_data <= 1'b1;
@@ -142,11 +148,11 @@ module memory_controller (
                     mem_ram_data <= rob_mem_val[7 : 0];
                     mem_ram_addr <= rob_mem_addr;
                     mem_ram_wr   <= 1'b1;
-                end else if (icache_mem_enable) begin
-                    mem_ram_addr <= icache_inst_addr;
+                end else if (fet_mem_enable) begin
+                    mem_ram_addr <= fet_pc;
                     mem_ram_wr   <= 1'b0;
                 end else begin
-                    if ((tmp_load_data || tmp_load_inst) && tmp_offset != 3'd0) begin
+                    if ((tmp_load_data || tmp_load_inst) && tmp_offset != 2'd0) begin
                         tmp_load_res[tmp_offset*8-1-:8] <= ram_data;
                     end
                     mem_data_ready <= (tmp_load_data && tmp_offset == tmp_state);
@@ -158,48 +164,43 @@ module memory_controller (
                                 mem_ram_addr <= tmp_inst_addr;
                                 mem_ram_wr   <= 1'b0;
                             end else begin
-                                mem_busy <= 1'b0;
+                                tmp_busy <= 1'b0;
                             end
-                            tmp_load_data <= 1'b0;
-                            tmp_offset    <= 3'd0;
-                        end else if (tmp_offset + 3'd1 == tmp_state) begin
-                            mem_ram_addr <= `XLEN'b0;
-                            mem_ram_wr   <= 1'b0;
-                            tmp_offset   <= tmp_offset + 3'd1;
+                            tmp_load_data   <= 1'b0;
+                            tmp_offset      <= 2'd0;
+                            tmp_last_offset <= tmp_offset;
                         end else begin
                             mem_ram_addr <= tmp_addr + tmp_offset + `XLEN'd1;
                             mem_ram_wr   <= 1'b0;
-                            tmp_offset   <= tmp_offset + 3'd1;
+                            tmp_offset   <= tmp_offset + 2'd1;
                         end
                     end else if (tmp_store_data) begin
-                        if (tmp_offset + 3'd1 == tmp_state) begin
+                        if (tmp_offset == tmp_state) begin
                             if (tmp_load_inst) begin
                                 mem_ram_addr <= tmp_inst_addr;
                                 mem_ram_wr   <= 1'b0;
                             end else begin
-                                mem_busy <= 1'b0;
+                                tmp_busy <= 1'b0;
                             end
                             tmp_store_data <= 1'b0;
-                            tmp_offset     <= 3'd0;
+                            tmp_offset     <= 2'd0;
                         end else begin
                             mem_ram_data <= tmp_val[8*tmp_offset+15-:8];
-                            mem_ram_addr <= tmp_addr + tmp_offset;
+                            mem_ram_addr <= tmp_addr + tmp_offset + `XLEN'd1;
                             mem_ram_wr   <= 1'b1;
-                            tmp_offset   <= tmp_offset + 3'd1;
+                            tmp_offset   <= tmp_offset + 2'd1;
                         end
                     end else if (tmp_load_inst) begin
                         if (tmp_mem_inst_ready) begin
-                            mem_inst_addr <= tmp_inst_addr;
-                            mem_busy      <= 1'b0;
-                            tmp_load_inst <= 1'b0;
-                        end else if (tmp_mem_inst_about_ready) begin
-                            mem_ram_addr <= `XLEN'b0;
-                            mem_ram_wr   <= 1'b0;
-                            tmp_offset   <= tmp_offset + 3'd1;
+                            mem_inst_addr   <= tmp_inst_addr;
+                            tmp_busy        <= 1'b0;
+                            tmp_load_inst   <= 1'b0;
+                            tmp_offset      <= 2'b0;
+                            tmp_last_offset <= tmp_offset;
                         end else begin
                             mem_ram_addr <= tmp_inst_addr + tmp_offset + `XLEN'd1;
                             mem_ram_wr   <= 1'b0;
-                            tmp_offset   <= tmp_offset + 3'd1;
+                            tmp_offset   <= tmp_offset + 2'd1;
                         end
                     end else begin
                         mem_ram_data <= 8'b0;
