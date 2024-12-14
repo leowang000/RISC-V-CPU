@@ -38,11 +38,11 @@ module reservation_station (
     input wire [          `XLEN - 1 : 0] rob_Q1_val,
     input wire                           rob_Q2_ready,
     input wire [          `XLEN - 1 : 0] rob_Q2_val,
-    input wire [  `ALU_OP_WIDTH - 1 : 0] rob_rs_remove_op,
+    input wire [ `INST_OP_WIDTH - 1 : 0] rob_rs_remove_op,
     input wire [`ROB_SIZE_WIDTH - 1 : 0] rob_tail_id,
 
     // output
-    output wire [`ROB_SIZE_WIDTH - 1 : 0] rs_remove_id,  // to ROB
+    output wire [`ROB_SIZE_WIDTH - 1 : 0] rs_remove_id,  // to ROB; the rob id of the instruction being removed
     output reg                            rs_full,
     output reg                            rs_ready,      // to ALU
     output reg  [  `ALU_OP_WIDTH - 1 : 0] rs_op,         // to ALU
@@ -73,7 +73,7 @@ module reservation_station (
     reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q2;
     reg  [            `XLEN - 1 : 0] tmp_new_updated_V2;
 
-    assign rs_remove_id          = tmp_remove_id;
+    assign rs_remove_id          = id[tmp_remove_id];
     assign tmp_inst_should_enter = (dec_op != `LUI && dec_op != `AUIPC && dec_op != `JAL && dec_op != `LB && dec_op != `LH && dec_op != `LW && dec_op != `LBU && dec_op != `LHU && dec_op != `SB && dec_op != `SH && dec_op != `SW);
     assign tmp_two_op            = (dec_op != `JALR && dec_op != `ADDI && dec_op != `SLTI && dec_op != `SLTIU && dec_op != `XORI && dec_op != `ORI && dec_op != `ANDI && dec_op != `SLLI && dec_op != `SRLI && dec_op != `SRAI);
 
@@ -110,7 +110,7 @@ module reservation_station (
     always @(*) begin
         tmp_insert_id         = `RS_SIZE_WIDTH'b0;
         tmp_insert_break_flag = 1'b0;
-        for (integer i = 0; i < `REG_CNT && !tmp_insert_break_flag; i = i + 1) begin
+        for (integer i = 0; i < `RS_SIZE && !tmp_insert_break_flag; i = i + 1) begin
             if (!busy[i]) begin
                 tmp_insert_id         = i;
                 tmp_insert_break_flag = 1'b1;
@@ -123,7 +123,7 @@ module reservation_station (
         tmp_remove_id         = `RS_SIZE_WIDTH'b0;
         tmp_should_remove     = 1'b0;
         tmp_remove_break_flag = 1'b0;
-        for (integer i = 0; i < `REG_CNT && !tmp_remove_break_flag; i = i + 1) begin
+        for (integer i = 0; i < `RS_SIZE && !tmp_remove_break_flag; i = i + 1) begin
             if (busy[i] && |Q1[i] && |Q2[i]) begin  // busy[i] && Q1[i] == -1 && Q2[i] == -1
                 tmp_remove_id         = i;
                 tmp_should_remove     = 1'b1;

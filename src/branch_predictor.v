@@ -27,7 +27,7 @@ module branch_predictor (
     reg [`XLEN - 1 : 0] tmp_total_sum;
     reg [`XLEN - 1 : 0] tmp_correct_sum;
 
-    assign bp_pred       = predictor[fet_inst_addr[`BP_SIZE_WIDTH-1 : 0]];
+    assign bp_pred       = predictor[fet_inst_addr[`BP_SIZE_WIDTH-1 : 0]][1];
     assign bp_corret_cnt = tmp_correct_sum;
     assign bp_total_cnt  = tmp_total_sum;
 
@@ -65,10 +65,10 @@ module branch_predictor (
                 end
             end else if (rob_bp_enable) begin
                 if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] != 2'b11 && rob_bp_jump) begin
-                    predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] + 1;
+                    predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] + 2'b01;
                 end
                 if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] != 2'b00 && !rob_bp_jump) begin
-                    predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] - 1;
+                    predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] - 2'b01;
                 end
                 total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]]   <= total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] + `XLEN'b1;
                 correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] <= correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH-1 : 0]] + (rob_bp_correct ? `XLEN'b1 : `XLEN'b0);

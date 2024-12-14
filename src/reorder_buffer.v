@@ -53,7 +53,7 @@ module reorder_buffer (
     output wire [          `XLEN - 1 : 0] rob_Q1_val,        // to LSB and RS
     output wire                           rob_Q2_ready,      // to LSB and RS
     output wire [          `XLEN - 1 : 0] rob_Q2_val,        // to LSB and RS
-    output wire [  `ALU_OP_WIDTH - 1 : 0] rob_rs_remove_op,  // to RS
+    output wire [ `INST_OP_WIDTH - 1 : 0] rob_rs_remove_op,  // to RS
     output reg  [`ROB_SIZE_WIDTH - 1 : 0] rob_head_id,       // range: [head, tail)
     output reg  [`ROB_SIZE_WIDTH - 1 : 0] rob_tail_id,
     output reg                            rob_flush,
@@ -100,6 +100,30 @@ module reorder_buffer (
     assign tmp_commit           = (!tmp_rob_empty && ready[rob_head_id] && !(tmp_rob_front_store && (mem_busy || (addr[rob_head_id] == `XLEN'h30000 && io_buffer_full))));
     assign tmp_flush            = (tmp_rob_front_branch ? jump_pred[rob_head_id] != val[rob_head_id][0 : 0] : op[rob_head_id] == `JALR);
     assign tmp_correct_pc       = (tmp_rob_front_branch ? (val[rob_head_id] ? addr[rob_head_id] : inst_addr[rob_head_id] + (c_extension[rob_head_id] ? `XLEN'd2 : `XLEN'd4)) : addr[rob_head_id]);
+
+    // debug begin
+    wire [         `XLEN - 1 : 0] dbg_commit_inst_addr;
+    wire                          dbg_front_output;
+    wire [`INST_OP_WIDTH - 1 : 0] dbg_rob_head_op;
+    wire [`REG_CNT_WIDTH - 1 : 0] dbg_rob_head_rd;
+    wire [         `XLEN - 1 : 0] dbg_rob_head_val;
+    wire [         `XLEN - 1 : 0] dbg_rob_head_addr;
+    wire                          dbg_rob_head_ready;
+    wire                          dbg_rob_head_jump_pred;
+    wire [         `XLEN - 1 : 0] dbg_rob_head_inst_addr;
+    wire                          dbg_rob_head_c_extension;
+
+    assign dbg_commit_inst_addr     = (tmp_commit ? inst_addr[rob_head_id] : `XLEN'b0);
+    assign dbg_front_output         = (tmp_rob_front_store && addr[rob_head_id] == `XLEN'h30000);
+    assign dbg_rob_head_op          = (!tmp_rob_empty ? op[rob_head_id] : `INST_OP_WIDTH'b0);
+    assign dbg_rob_head_rd          = (!tmp_rob_empty ? rd[rob_head_id] : `REG_CNT_WIDTH'b0);
+    assign dbg_rob_head_val         = (!tmp_rob_empty ? val[rob_head_id] : `XLEN'b0);
+    assign dbg_rob_head_addr        = (!tmp_rob_empty ? addr[rob_head_id] : `XLEN'b0);
+    assign dbg_rob_head_ready       = (!tmp_rob_empty ? ready[rob_head_id] : 1'b0);
+    assign dbg_rob_head_jump_pred   = (!tmp_rob_empty ? jump_pred[rob_head_id] : 1'b0);
+    assign dbg_rob_head_inst_addr   = (!tmp_rob_empty ? inst_addr[rob_head_id] : `XLEN'b0);
+    assign dbg_rob_head_c_extension = (!tmp_rob_empty ? c_extension[rob_head_id] : 1'b0);
+    // debug end
 
     initial begin
         rob_head_id      = `ROB_SIZE_WIDTH'b0;
@@ -227,13 +251,13 @@ module reorder_buffer (
                     rob_rf_rd     <= rd[rob_head_id];
                     rob_rf_val    <= val[rob_head_id];
                 end
-                if (!tmp_commit || !tmp_rob_front_store) begin
-                    rob_mem_enable <= 1'b0;
-                end else begin
+                if (tmp_commit && tmp_rob_front_store) begin
                     rob_mem_enable <= 1'b1;
                     rob_mem_op     <= op[rob_head_id];
                     rob_mem_addr   <= addr[rob_head_id];
                     rob_mem_val    <= val[rob_head_id];
+                end else begin
+                    rob_mem_enable <= 1'b0;
                 end
                 if (tmp_commit) begin
                     rob_flush      <= tmp_flush;

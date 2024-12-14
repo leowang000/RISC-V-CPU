@@ -91,7 +91,7 @@ module cpu (
     wire [            `XLEN - 1 : 0] rob_Q1_val;
     wire                             rob_Q2_ready;
     wire [            `XLEN - 1 : 0] rob_Q2_val;
-    wire [    `ALU_OP_WIDTH - 1 : 0] rob_rs_remove_op;
+    wire [   `INST_OP_WIDTH - 1 : 0] rob_rs_remove_op;
     wire [  `ROB_SIZE_WIDTH - 1 : 0] rob_head_id;
     wire [  `ROB_SIZE_WIDTH - 1 : 0] rob_tail_id;
     wire                             rob_flush;
