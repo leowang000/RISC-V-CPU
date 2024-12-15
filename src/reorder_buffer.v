@@ -88,10 +88,10 @@ module reorder_buffer (
     wire [         `XLEN - 1 : 0] tmp_correct_pc;
 
     assign rob_full             = (rob_head_id == rob_tail_id + `ROB_SIZE_WIDTH'b1);
-    assign rob_Q1_ready         = (|rf_dep1 ? 1'b0 : ready[rf_dep1[`ROB_SIZE-1 : 0]]);
-    assign rob_Q1_val           = (|rf_dep1 ? `XLEN'b0 : val[rf_dep1[`ROB_SIZE-1 : 0]]);
-    assign rob_Q2_ready         = (|rf_dep2 ? 1'b0 : ready[rf_dep2[`ROB_SIZE-1 : 0]]);
-    assign rob_Q2_val           = (|rf_dep2 ? `XLEN'b0 : val[rf_dep2[`ROB_SIZE-1 : 0]]);
+    assign rob_Q1_ready         = (&rf_dep1 ? 1'b0 : ready[rf_dep1[`ROB_SIZE_WIDTH-1 : 0]]);
+    assign rob_Q1_val           = (&rf_dep1 ? `XLEN'b0 : val[rf_dep1[`ROB_SIZE_WIDTH-1 : 0]]);
+    assign rob_Q2_ready         = (&rf_dep2 ? 1'b0 : ready[rf_dep2[`ROB_SIZE_WIDTH-1 : 0]]);
+    assign rob_Q2_val           = (&rf_dep2 ? `XLEN'b0 : val[rf_dep2[`ROB_SIZE_WIDTH-1 : 0]]);
     assign rob_rs_remove_op     = op[rs_remove_id];
     assign tmp_rob_empty        = (rob_head_id == rob_tail_id);
     assign tmp_lsb_front_store  = (!lsb_empty && (lsb_front_op == `SB || lsb_front_op == `SH || lsb_front_op == `SW));
@@ -239,7 +239,7 @@ module reorder_buffer (
                     end
                     ready[alu_id] <= 1'b1;
                 end
-                if (tmp_lsb_front_store && |lsb_front_Q1 && |lsb_front_Q2) begin  // tmp_lsb_front_store && lsb_front_Q1 == -1 && lsb_front_Q2 == -1
+                if (tmp_lsb_front_store && &lsb_front_Q1 && &lsb_front_Q2) begin  // tmp_lsb_front_store && lsb_front_Q1 == -1 && lsb_front_Q2 == -1
                     addr[lsb_front_id]  <= lsb_front_V1;
                     val[lsb_front_id]   <= lsb_front_V2;
                     ready[lsb_front_id] <= 1'b1;

@@ -124,7 +124,7 @@ module reservation_station (
         tmp_should_remove     = 1'b0;
         tmp_remove_break_flag = 1'b0;
         for (integer i = 0; i < `RS_SIZE && !tmp_remove_break_flag; i = i + 1) begin
-            if (busy[i] && |Q1[i] && |Q2[i]) begin  // busy[i] && Q1[i] == -1 && Q2[i] == -1
+            if (busy[i] && &Q1[i] && &Q2[i]) begin  // busy[i] && Q1[i] == -1 && Q2[i] == -1
                 tmp_remove_id         = i;
                 tmp_should_remove     = 1'b1;
                 tmp_remove_break_flag = 1'b1;
@@ -133,22 +133,20 @@ module reservation_station (
     end
 
     always @(*) begin
-        if (|rf_dep1) begin  // rf_dep1 == -1
+        if (&rf_dep1) begin  // rf_dep1 == -1
             tmp_new_Q1 = -`DEPENDENCY_WIDTH'b1;
             tmp_new_V1 = rf_val1;
+        end else if (rob_Q1_ready) begin
+            tmp_new_Q1 = -`DEPENDENCY_WIDTH'b1;
+            tmp_new_V1 = rob_Q1_val;
         end else begin
-            if (rob_Q1_ready) begin
-                tmp_new_Q1 = -`DEPENDENCY_WIDTH'b1;
-                tmp_new_V1 = rob_Q1_val;
-            end else begin
-                tmp_new_Q1 = rf_dep1;
-                tmp_new_V1 = `XLEN'b0;
-            end
+            tmp_new_Q1 = rf_dep1;
+            tmp_new_V1 = `XLEN'b0;
         end
-        if (tmp_new_Q1 == mem_id) begin  // zero extension: mem_id
+        if (tmp_new_Q1 == {1'b0, mem_id}) begin
             tmp_new_updated_Q1 = -`DEPENDENCY_WIDTH'b1;
             tmp_new_updated_V1 = mem_data;
-        end else if (tmp_new_Q1 == alu_id) begin  // zero extension: alu_id
+        end else if (tmp_new_Q1 == {1'b0, alu_id}) begin
             tmp_new_updated_Q1 = -`DEPENDENCY_WIDTH'b1;
             tmp_new_updated_V1 = alu_res;
         end else begin
@@ -159,26 +157,24 @@ module reservation_station (
 
     always @(*) begin
         if (tmp_two_op) begin
-            if (|rf_dep2) begin  // rf_dep2 == -1
+            if (&rf_dep2) begin  // rf_dep2 == -1
                 tmp_new_Q2 = -`DEPENDENCY_WIDTH'b1;
                 tmp_new_V2 = rf_val2;
+            end else if (rob_Q2_ready) begin
+                tmp_new_Q2 = -`DEPENDENCY_WIDTH'b1;
+                tmp_new_V2 = rob_Q2_val;
             end else begin
-                if (rob_Q2_ready) begin
-                    tmp_new_Q2 = -`DEPENDENCY_WIDTH'b1;
-                    tmp_new_V2 = rob_Q2_val;
-                end else begin
-                    tmp_new_Q2 = rf_dep2;
-                    tmp_new_V2 = `XLEN'b0;
-                end
+                tmp_new_Q2 = rf_dep2;
+                tmp_new_V2 = `XLEN'b0;
             end
         end else begin
             tmp_new_Q2 = -`DEPENDENCY_WIDTH'b1;
             tmp_new_V2 = dec_imm;
         end
-        if (tmp_new_Q2 == mem_id) begin  // zero extension: mem_id
+        if (tmp_new_Q2 == {1'b0, mem_id}) begin
             tmp_new_updated_Q2 = -`DEPENDENCY_WIDTH'b1;
             tmp_new_updated_V2 = mem_data;
-        end else if (tmp_new_Q2 == alu_id) begin  // zero extension: alu_id
+        end else if (tmp_new_Q2 == {1'b0, alu_id}) begin
             tmp_new_updated_Q2 = -`DEPENDENCY_WIDTH'b1;
             tmp_new_updated_V2 = alu_res;
         end else begin
@@ -220,11 +216,11 @@ module reservation_station (
                 if (mem_data_ready) begin
                     for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
                         if (busy[i]) begin
-                            if (Q1[i] == mem_id) begin  // zero extension: mem_id
+                            if (Q1[i] == {1'b0, mem_id}) begin
                                 Q1[i] <= -`DEPENDENCY_WIDTH'b1;
                                 V1[i] <= mem_data;
                             end
-                            if (Q2[i] == mem_id) begin  // zero extension: mem_id
+                            if (Q2[i] == {1'b0, mem_id}) begin
                                 Q2[i] <= -`DEPENDENCY_WIDTH'b1;
                                 V2[i] <= mem_data;
                             end
@@ -234,11 +230,11 @@ module reservation_station (
                 if (alu_ready) begin
                     for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
                         if (busy[i]) begin
-                            if (Q1[i] == alu_id) begin  // zero extension: alu_id
+                            if (Q1[i] == {1'b0, alu_id}) begin
                                 Q1[i] <= -`DEPENDENCY_WIDTH'b1;
                                 V1[i] <= alu_res;
                             end
-                            if (Q2[i] == alu_id) begin  // zero extension: alu_id
+                            if (Q2[i] == {1'b0, alu_id}) begin
                                 Q2[i] <= -`DEPENDENCY_WIDTH'b1;
                                 V2[i] <= alu_res;
                             end

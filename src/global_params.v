@@ -36,9 +36,9 @@
 `define LSB_SIZE_WIDTH 1
 
 // ROB
-`define ROB_SIZE 2  // capacity = 31
-`define ROB_SIZE_WIDTH 1
-`define DEPENDENCY_WIDTH 2  // -1 for no dependency; always ensure `DEPENDENCY_WIDTH == `ROB_SIZE_WIDTH + 1
+`define ROB_SIZE 4  // capacity = 31
+`define ROB_SIZE_WIDTH 2
+`define DEPENDENCY_WIDTH 3  // -1 for no dependency; always ensure `DEPENDENCY_WIDTH == `ROB_SIZE_WIDTH + 1
 
 // RS
 `define RS_SIZE 2  // capacity = 16
