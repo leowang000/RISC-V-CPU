@@ -269,7 +269,7 @@ module reorder_buffer (
                 if (tmp_commit && tmp_rob_front_branch) begin
                     rob_bp_enable    <= 1'b1;
                     rob_bp_inst_addr <= inst_addr[rob_head_id];
-                    rob_bp_jump      <= val[rob_head_id][0:0];
+                    rob_bp_jump      <= val[rob_head_id][0];
                     rob_bp_correct   <= !tmp_flush;
                 end else begin
                     rob_bp_enable <= 1'b0;

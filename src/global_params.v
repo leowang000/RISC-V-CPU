@@ -25,8 +25,8 @@
 `define ALU_GEU `ALU_OP_WIDTH'd13
 
 // BP
-`define BP_SIZE 128
-`define BP_SIZE_WIDTH 7
+`define BP_SIZE 256
+`define BP_SIZE_WIDTH 8
 
 // Icache
 `define ICACHE_LINE_CNT 1024  // 16 bits in each line, 2KB in total
