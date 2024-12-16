@@ -34,7 +34,7 @@ module branch_predictor (
 
     initial begin
         for (integer i = 0; i < `BP_SIZE; i = i + 1) begin
-            predictor[i]       = 2'b0;
+            predictor[i]       = 2'b01;
             total_counter[i]   = `XLEN'b0;
             correct_counter[i] = `XLEN'b0;
         end
@@ -60,7 +60,7 @@ module branch_predictor (
         if (rdy) begin
             if (rst) begin
                 for (integer i = 0; i < `BP_SIZE; i = i + 1) begin
-                    predictor[i]       <= 2'b0;
+                    predictor[i]       <= 2'b01;
                     total_counter[i]   <= `XLEN'b0;
                     correct_counter[i] <= `XLEN'b0;
                 end

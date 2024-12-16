@@ -102,7 +102,7 @@ module fetcher (
                         end else begin  // C extension
                             if (tmp_inst[1 : 0] == 2'b01 && tmp_inst[14 : 13] == 2'b01) begin  // C.JAL and C.J
                                 fet_pc <= fet_pc + {{21{tmp_inst[12]}}, tmp_inst[8 : 8], tmp_inst[10 : 9], tmp_inst[6 : 6], tmp_inst[7 : 7], tmp_inst[2 : 2], tmp_inst[11 : 11], tmp_inst[5 : 3], 1'b0};
-                            end else if (tmp_inst[1 : 0] == 2'b01 && tmp_inst[15 : 14] == 2'b11) begin  // C.BEQZ and C.BNEZ
+                            end else if (tmp_inst[1 : 0] == 2'b01 && tmp_inst[15 : 14] == 2'b11 && bp_pred) begin  // C.BEQZ and C.BNEZ
                                 fet_pc <= fet_pc + {{24{tmp_inst[12]}}, tmp_inst[6 : 5], tmp_inst[2 : 2], tmp_inst[11 : 10], tmp_inst[4 : 3], 1'b0};
                             end else begin
                                 fet_pc <= fet_pc + `XLEN'd2;

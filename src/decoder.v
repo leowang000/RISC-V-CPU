@@ -268,7 +268,7 @@ module decoder (
                                             dec_imm <= `XLEN'b0;
                                         end
                                     end else begin
-                                        if (fet_inst[6 : 2] == `REG_CNT_WIDTH'b0) begin  // C.MV
+                                        if (fet_inst[6 : 2] != `REG_CNT_WIDTH'b0) begin  // C.MV
                                             dec_op  <= `ADD;
                                             dec_rd  <= fet_inst[11 : 7];
                                             dec_rs1 <= `REG_CNT_WIDTH'd0;  // x0
@@ -283,7 +283,7 @@ module decoder (
                                         end
                                     end
                                 end
-                                2'b01: begin  // C.SWSP
+                                2'b11: begin  // C.SWSP
                                     dec_op  <= `SW;
                                     dec_rd  <= `REG_CNT_WIDTH'b0;
                                     dec_rs1 <= `REG_CNT_WIDTH'd2;  // sp
