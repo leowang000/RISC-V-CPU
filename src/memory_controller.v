@@ -186,44 +186,43 @@ module memory_controller (
                             mem_id <= tmp_id;
                             if (tmp_load_inst) begin
                                 mem_ram_addr <= tmp_inst_addr;
-                                mem_ram_wr   <= 1'b0;
                             end else begin
-                                tmp_busy <= 1'b0;
+                                mem_ram_addr <= `XLEN'b0;
+                                tmp_busy     <= 1'b0;
                             end
                             tmp_load_data   <= 1'b0;
                             tmp_offset      <= 2'd0;
                             tmp_last_offset <= tmp_offset;
                         end else begin
                             mem_ram_addr <= tmp_addr + tmp_offset + `XLEN'd1;
-                            mem_ram_wr   <= 1'b0;
                             tmp_offset   <= tmp_offset + 2'd1;
                         end
                     end else if (tmp_store_data) begin
                         if (tmp_offset == tmp_state) begin
+                            mem_ram_wr <= 1'b0;
                             if (tmp_load_inst) begin
                                 mem_ram_addr <= tmp_inst_addr;
-                                mem_ram_wr   <= 1'b0;
                             end else begin
-                                tmp_busy <= 1'b0;
+                                mem_ram_addr <= `XLEN'b0;
+                                tmp_busy     <= 1'b0;
                             end
                             tmp_store_data <= 1'b0;
                             tmp_offset     <= 2'd0;
                         end else begin
                             mem_ram_data <= tmp_val[8*tmp_offset+15-:8];
                             mem_ram_addr <= tmp_addr + tmp_offset + `XLEN'd1;
-                            mem_ram_wr   <= 1'b1;
                             tmp_offset   <= tmp_offset + 2'd1;
                         end
                     end else begin  // tmp_load_inst == 1'b1
                         if (tmp_mem_inst_ready) begin
                             mem_inst_addr   <= tmp_inst_addr;
+                            mem_ram_addr    <= `XLEN'b0;
                             tmp_busy        <= 1'b0;
                             tmp_load_inst   <= 1'b0;
                             tmp_offset      <= 2'b0;
                             tmp_last_offset <= tmp_offset;
                         end else begin
                             mem_ram_addr <= tmp_inst_addr + tmp_offset + `XLEN'd1;
-                            mem_ram_wr   <= 1'b0;
                             tmp_offset   <= tmp_offset + 2'd1;
                         end
                     end
