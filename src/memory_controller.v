@@ -61,7 +61,7 @@ module memory_controller (
     reg  [                  1 : 0] tmp_last_offset;
     reg                            tmp_last_mem_inst_ready;
 
-    assign tmp_mem_inst_ready = (!tmp_load_data && !tmp_store_data && (((tmp_offset == STATE_HALF && ram_data[1 : 0] != 2'b11 && ram_data != 8'b0) || (tmp_offset == STATE_WORD && tmp_load_res[1 : 0] == 2'b11))));
+    assign tmp_mem_inst_ready = (!tmp_load_data && !tmp_store_data && (((tmp_offset == STATE_HALF && ram_data[1 : 0] != 2'b11) || (tmp_offset == STATE_WORD && tmp_load_res[1 : 0] == 2'b11))));
     assign tmp_cur_load_res   = (tmp_last_offset == STATE_BYTE ? {24'b0, ram_data} : (tmp_last_offset == STATE_HALF ? {16'b0, ram_data, tmp_load_res[7 : 0]} : {ram_data, tmp_load_res}));
     assign mem_busy           = (fet_mem_enable || lsb_mem_enable || rob_mem_enable || tmp_busy);
     assign mem_fet_busy       = tmp_busy;
