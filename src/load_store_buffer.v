@@ -129,10 +129,10 @@ module load_store_buffer (
             tmp_new_Q1 = rf_dep1;
             tmp_new_V1 = dec_imm;
         end
-        if (tmp_new_Q1 == {1'b0, mem_id}) begin
+        if (mem_data_ready && tmp_new_Q1 == {1'b0, mem_id}) begin
             tmp_new_updated_Q1 = -`DEPENDENCY_WIDTH'b1;
             tmp_new_updated_V1 = tmp_new_V1 + mem_data;
-        end else if (tmp_new_Q1 == {1'b0, alu_id}) begin
+        end else if (alu_ready && tmp_new_Q1 == {1'b0, alu_id}) begin
             tmp_new_updated_Q1 = -`DEPENDENCY_WIDTH'b1;
             tmp_new_updated_V1 = tmp_new_V1 + alu_res;
         end else begin
@@ -157,10 +157,10 @@ module load_store_buffer (
                 tmp_new_V2 = `XLEN'b0;
             end
         end
-        if (tmp_new_Q2 == {1'b0, mem_id}) begin
+        if (mem_data_ready && tmp_new_Q2 == {1'b0, mem_id}) begin
             tmp_new_updated_Q2 = -`DEPENDENCY_WIDTH'b1;
             tmp_new_updated_V2 = mem_data;
-        end else if (tmp_new_Q2 == {1'b0, alu_id}) begin
+        end else if (alu_ready && tmp_new_Q2 == {1'b0, alu_id}) begin
             tmp_new_updated_Q2 = -`DEPENDENCY_WIDTH'b1;
             tmp_new_updated_V2 = alu_res;
         end else begin
