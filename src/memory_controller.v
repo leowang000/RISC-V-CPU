@@ -127,17 +127,18 @@ module memory_controller (
                 tmp_offset      <= 2'b0;
                 tmp_load_res    <= `XLEN'b0;
                 tmp_last_offset <= 2'b0;
-            end else if (flush) begin
-                mem_inst_ready <= 1'b0;
-                mem_data_ready <= 1'b0;
-                mem_ram_data   <= 8'b0;
-                mem_ram_addr   <= `XLEN'b0;
-                mem_ram_wr     <= 1'b0;
-                tmp_busy       <= 1'b0;
-                tmp_load_inst  <= 1'b0;
-                tmp_load_data  <= 1'b0;
-                tmp_store_data <= 1'b0;
-                tmp_offset     <= 2'b0;
+            end else if (flush) begin  // only flush instruction load and data load
+                tmp_load_inst <= 1'b0;
+                if (!tmp_store_data) begin
+                    mem_inst_ready <= 1'b0;
+                    mem_data_ready <= 1'b0;
+                    mem_ram_data   <= 8'b0;
+                    mem_ram_addr   <= `XLEN'b0;
+                    mem_ram_wr     <= 1'b0;
+                    tmp_busy       <= 1'b0;
+                    tmp_load_data  <= 1'b0;
+                    tmp_offset     <= 2'b0;
+                end
             end else begin
                 mem_data_ready <= (tmp_load_data && tmp_offset == tmp_state);
                 if (tmp_mem_inst_ready) begin
