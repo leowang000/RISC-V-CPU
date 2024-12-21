@@ -243,6 +243,7 @@ module cpu (
         .rob_Q1_val    (rob_Q1_val),
         .rob_Q2_ready  (rob_Q2_ready),
         .rob_Q2_val    (rob_Q2_val),
+        .rob_head_id   (rob_head_id),
         .rob_tail_id   (rob_tail_id),
         .lsb_full      (lsb_full),
         .lsb_empty     (lsb_empty),
