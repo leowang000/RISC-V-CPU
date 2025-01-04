@@ -222,13 +222,15 @@ module load_store_buffer (
                 end
                 if (alu_ready) begin
                     for (i = 0; i < `LSB_SIZE; i = i + 1) begin
-                        if (Q1[i] == {1'b0, alu_id}) begin
-                            Q1[i] <= -`DEPENDENCY_WIDTH'b1;
-                            V1[i] <= V1[i] + alu_res;
-                        end
-                        if (Q2[i] == {1'b0, alu_id}) begin
-                            Q2[i] <= -`DEPENDENCY_WIDTH'b1;
-                            V2[i] <= alu_res;
+                        if (busy[i]) begin
+                            if (Q1[i] == {1'b0, alu_id}) begin
+                                Q1[i] <= -`DEPENDENCY_WIDTH'b1;
+                                V1[i] <= V1[i] + alu_res;
+                            end
+                            if (Q2[i] == {1'b0, alu_id}) begin
+                                Q2[i] <= -`DEPENDENCY_WIDTH'b1;
+                                V2[i] <= alu_res;
+                            end
                         end
                     end
                 end
