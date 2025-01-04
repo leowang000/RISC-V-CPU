@@ -21,19 +21,21 @@ module branch_predictor (
     output wire [`XLEN - 1 : 0] bp_corret_cnt,  // for branch prediction accuracy
     output wire [`XLEN - 1 : 0] bp_total_cnt    // for branch prediction accuracy
 );
-    reg [        1 : 0] predictor       [`BP_SIZE - 1 : 0];
-    reg [`XLEN - 1 : 0] total_counter   [`BP_SIZE - 1 : 0];
-    reg [`XLEN - 1 : 0] correct_counter [`BP_SIZE - 1 : 0];
+    integer                 i;
 
-    reg [`XLEN - 1 : 0] tmp_total_sum;
-    reg [`XLEN - 1 : 0] tmp_correct_sum;
+    reg     [        1 : 0] predictor       [`BP_SIZE - 1 : 0];
+    reg     [`XLEN - 1 : 0] total_counter   [`BP_SIZE - 1 : 0];
+    reg     [`XLEN - 1 : 0] correct_counter [`BP_SIZE - 1 : 0];
+
+    reg     [`XLEN - 1 : 0] tmp_total_sum;
+    reg     [`XLEN - 1 : 0] tmp_correct_sum;
 
     assign bp_pred       = predictor[fet_pc[`BP_SIZE_WIDTH : 1]][1];
     assign bp_corret_cnt = tmp_correct_sum;
     assign bp_total_cnt  = tmp_total_sum;
 
     initial begin
-        for (integer i = 0; i < `BP_SIZE; i = i + 1) begin
+        for (i = 0; i < `BP_SIZE; i = i + 1) begin
             predictor[i]       = 2'b01;
             total_counter[i]   = `XLEN'b0;
             correct_counter[i] = `XLEN'b0;
@@ -44,14 +46,14 @@ module branch_predictor (
 
     always @(*) begin
         tmp_total_sum = `XLEN'b0;
-        for (integer i = 0; i < `BP_SIZE; i = i + 1) begin
+        for (i = 0; i < `BP_SIZE; i = i + 1) begin
             tmp_total_sum = tmp_total_sum + total_counter[i];
         end
     end
 
     always @(*) begin
         tmp_correct_sum = `XLEN'b0;
-        for (integer i = 0; i < `BP_SIZE; i = i + 1) begin
+        for (i = 0; i < `BP_SIZE; i = i + 1) begin
             tmp_correct_sum = tmp_correct_sum + correct_counter[i];
         end
     end
@@ -59,7 +61,7 @@ module branch_predictor (
     always @(posedge clk) begin
         if (rdy) begin
             if (rst) begin
-                for (integer i = 0; i < `BP_SIZE; i = i + 1) begin
+                for (i = 0; i < `BP_SIZE; i = i + 1) begin
                     predictor[i]       <= 2'b01;
                     total_counter[i]   <= `XLEN'b0;
                     correct_counter[i] <= `XLEN'b0;

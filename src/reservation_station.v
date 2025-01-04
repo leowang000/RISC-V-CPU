@@ -50,28 +50,30 @@ module reservation_station (
     output reg  [          `XLEN - 1 : 0] rs_val2,       // to ALU
     output reg  [`ROB_SIZE_WIDTH - 1 : 0] rs_id          // to ALU; the rob id of the instruction being calculated
 );
-    reg                              busy                  [`RS_SIZE - 1 : 0];
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] Q1                    [`RS_SIZE - 1 : 0];
-    reg  [            `XLEN - 1 : 0] V1                    [`RS_SIZE - 1 : 0];
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] Q2                    [`RS_SIZE - 1 : 0];
-    reg  [            `XLEN - 1 : 0] V2                    [`RS_SIZE - 1 : 0];
-    reg  [  `ROB_SIZE_WIDTH - 1 : 0] id                    [`RS_SIZE - 1 : 0];  // the rob id
+    integer                             i;
 
-    wire                             tmp_inst_should_enter;
-    wire                             tmp_two_op;
-    reg                              tmp_insert_break_flag;
-    reg  [   `RS_SIZE_WIDTH - 1 : 0] tmp_insert_id;
-    reg                              tmp_remove_break_flag;
-    reg  [   `RS_SIZE_WIDTH - 1 : 0] tmp_remove_id;
-    reg                              tmp_should_remove;
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_Q1;
-    reg  [            `XLEN - 1 : 0] tmp_new_V1;
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_Q2;
-    reg  [            `XLEN - 1 : 0] tmp_new_V2;
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q1;
-    reg  [            `XLEN - 1 : 0] tmp_new_updated_V1;
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q2;
-    reg  [            `XLEN - 1 : 0] tmp_new_updated_V2;
+    reg                                 busy                  [`RS_SIZE - 1 : 0];
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] Q1                    [`RS_SIZE - 1 : 0];
+    reg     [            `XLEN - 1 : 0] V1                    [`RS_SIZE - 1 : 0];
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] Q2                    [`RS_SIZE - 1 : 0];
+    reg     [            `XLEN - 1 : 0] V2                    [`RS_SIZE - 1 : 0];
+    reg     [  `ROB_SIZE_WIDTH - 1 : 0] id                    [`RS_SIZE - 1 : 0];  // the rob id
+
+    wire                                tmp_inst_should_enter;
+    wire                                tmp_two_op;
+    reg                                 tmp_insert_break_flag;
+    reg     [   `RS_SIZE_WIDTH - 1 : 0] tmp_insert_id;
+    reg                                 tmp_remove_break_flag;
+    reg     [   `RS_SIZE_WIDTH - 1 : 0] tmp_remove_id;
+    reg                                 tmp_should_remove;
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_Q1;
+    reg     [            `XLEN - 1 : 0] tmp_new_V1;
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_Q2;
+    reg     [            `XLEN - 1 : 0] tmp_new_V2;
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q1;
+    reg     [            `XLEN - 1 : 0] tmp_new_updated_V1;
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q2;
+    reg     [            `XLEN - 1 : 0] tmp_new_updated_V2;
 
     assign rs_remove_id          = id[tmp_remove_id];
     assign tmp_inst_should_enter = (dec_op != `LUI && dec_op != `AUIPC && dec_op != `JAL && dec_op != `LB && dec_op != `LH && dec_op != `LW && dec_op != `LBU && dec_op != `LHU && dec_op != `SB && dec_op != `SH && dec_op != `SW);
@@ -84,7 +86,7 @@ module reservation_station (
         rs_val1  = `XLEN'b0;
         rs_val2  = `XLEN'b0;
         rs_id    = `ROB_SIZE_WIDTH'b0;
-        for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
+        for (i = 0; i < `RS_SIZE; i = i + 1) begin
             busy[i] = 1'b0;
             Q1[i]   = -`DEPENDENCY_WIDTH'b1;
             V1[i]   = `XLEN'b0;
@@ -110,7 +112,7 @@ module reservation_station (
     always @(*) begin
         tmp_insert_id         = `RS_SIZE_WIDTH'b0;
         tmp_insert_break_flag = 1'b0;
-        for (integer i = 0; i < `RS_SIZE && !tmp_insert_break_flag; i = i + 1) begin
+        for (i = 0; i < `RS_SIZE && !tmp_insert_break_flag; i = i + 1) begin
             if (!busy[i]) begin
                 tmp_insert_id         = i;
                 tmp_insert_break_flag = 1'b1;
@@ -123,7 +125,7 @@ module reservation_station (
         tmp_remove_id         = `RS_SIZE_WIDTH'b0;
         tmp_should_remove     = 1'b0;
         tmp_remove_break_flag = 1'b0;
-        for (integer i = 0; i < `RS_SIZE && !tmp_remove_break_flag; i = i + 1) begin
+        for (i = 0; i < `RS_SIZE && !tmp_remove_break_flag; i = i + 1) begin
             if (busy[i] && &Q1[i] && &Q2[i]) begin  // busy[i] && Q1[i] == -1 && Q2[i] == -1
                 tmp_remove_id         = i;
                 tmp_should_remove     = 1'b1;
@@ -191,7 +193,7 @@ module reservation_station (
                 rs_val1  <= `XLEN'b0;
                 rs_val2  <= `XLEN'b0;
                 rs_id    <= `ROB_SIZE_WIDTH'b0;
-                for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
+                for (i = 0; i < `RS_SIZE; i = i + 1) begin
                     busy[i] <= 1'b0;
                     Q1[i]   <= -`DEPENDENCY_WIDTH'b1;
                     V1[i]   <= `XLEN'b0;
@@ -201,7 +203,7 @@ module reservation_station (
                 end
             end else if (flush) begin
                 rs_ready <= 1'b0;
-                for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
+                for (i = 0; i < `RS_SIZE; i = i + 1) begin
                     busy[i] <= 1'b0;
                 end
             end else begin
@@ -214,7 +216,7 @@ module reservation_station (
                     V2[tmp_insert_id]   <= tmp_new_updated_V2;
                 end
                 if (mem_data_ready) begin
-                    for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
+                    for (i = 0; i < `RS_SIZE; i = i + 1) begin
                         if (busy[i]) begin
                             if (Q1[i] == {1'b0, mem_id}) begin
                                 Q1[i] <= -`DEPENDENCY_WIDTH'b1;
@@ -228,7 +230,7 @@ module reservation_station (
                     end
                 end
                 if (alu_ready) begin
-                    for (integer i = 0; i < `RS_SIZE; i = i + 1) begin
+                    for (i = 0; i < `RS_SIZE; i = i + 1) begin
                         if (busy[i]) begin
                             if (Q1[i] == {1'b0, alu_id}) begin
                                 Q1[i] <= -`DEPENDENCY_WIDTH'b1;

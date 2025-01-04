@@ -1,0 +1,42 @@
+
+*** Running vivado
+    with args -log riscv_top.vds -m64 -product Vivado -mode batch -messageDb vivado.pb -notrace -source riscv_top.tcl
+
+
+
+****** Vivado v2024.2 (64-bit)
+  **** SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+  **** IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+  **** SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+  **** Start of session at: Sat Jan  4 22:06:36 2025
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source riscv_top.tcl -notrace
+Command: synth_design -top riscv_top -part xc7k70tfbv676-1
+Starting synth_design
+Attempting to get a license for feature 'Synthesis' and/or device 'xc7k70t'
+INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xc7k70t'
+INFO: [Device 21-403] Loading part xc7k70tfbv676-1
+INFO: [Synth 8-7079] Multithreading enabled for synth_design using a maximum of 2 processes.
+INFO: [Synth 8-7078] Launching helper process for spawning children vivado processes
+INFO: [Synth 8-7075] Helper process launched with PID 48828
+---------------------------------------------------------------------------------
+Starting RTL Elaboration : Time (s): cpu = 00:00:03 ; elapsed = 00:00:04 . Memory (MB): peak = 1019.125 ; gain = 465.746
+---------------------------------------------------------------------------------
+ERROR: [Synth 8-10936] loop variable declaration is not allowed in this mode of Verilog [C:/Users/leowa/VSCodeProjects/RISC-V-CPU/src/branch_predictor.v:36]
+ERROR: [Synth 8-10936] loop variable declaration is not allowed in this mode of Verilog [C:/Users/leowa/VSCodeProjects/RISC-V-CPU/src/branch_predictor.v:47]
+ERROR: [Synth 8-10936] loop variable declaration is not allowed in this mode of Verilog [C:/Users/leowa/VSCodeProjects/RISC-V-CPU/src/branch_predictor.v:54]
+ERROR: [Synth 8-10936] loop variable declaration is not allowed in this mode of Verilog [C:/Users/leowa/VSCodeProjects/RISC-V-CPU/src/branch_predictor.v:62]
+INFO: [Synth 8-10285] module 'branch_predictor' is ignored due to previous errors [C:/Users/leowa/VSCodeProjects/RISC-V-CPU/src/branch_predictor.v:79]
+INFO: [Synth 8-9084] Verilog file 'C:/Users/leowa/VSCodeProjects/RISC-V-CPU/src/branch_predictor.v' ignored due to errors
+ERROR: [Synth 8-12188] Failed to read verilog 'C:/Users/leowa/VSCodeProjects/RISC-V-CPU/src/branch_predictor.v'
+---------------------------------------------------------------------------------
+Finished RTL Elaboration : Time (s): cpu = 00:00:04 ; elapsed = 00:00:05 . Memory (MB): peak = 1119.125 ; gain = 565.746
+---------------------------------------------------------------------------------
+RTL Elaboration failed
+INFO: [Common 17-83] Releasing license: Synthesis
+8 Infos, 0 Warnings, 0 Critical Warnings and 6 Errors encountered.
+synth_design failed
+ERROR: [Common 17-69] Command failed: Synthesis failed - please see the console or run log file for details
+INFO: [Common 17-206] Exiting Vivado at Sat Jan  4 22:06:48 2025...

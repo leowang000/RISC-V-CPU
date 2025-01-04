@@ -28,8 +28,10 @@ module register_file (
     output wire [            `XLEN - 1 : 0] rf_val2,  // value of register dec_rs2
     output wire [`DEPENDENCY_WIDTH - 1 : 0] rf_dep2   // dependency of register dec_rs2
 );
-    reg [            `XLEN - 1 : 0] val[`REG_CNT - 1 : 0];
-    reg [`DEPENDENCY_WIDTH - 1 : 0] dep[`REG_CNT - 1 : 0];
+    integer                             i;
+
+    reg     [            `XLEN - 1 : 0] val[`REG_CNT - 1 : 0];
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] dep[`REG_CNT - 1 : 0];
 
     assign rf_val1 = (dec_rs1 == `REG_CNT_WIDTH'b0 ? `XLEN'b0 : (rob_rf_enable && rob_rf_rd == dec_rs1 ? rob_rf_val : val[dec_rs1]));
     assign rf_val2 = (dec_rs2 == `REG_CNT_WIDTH'b0 ? `XLEN'b0 : (rob_rf_enable && rob_rf_rd == dec_rs2 ? rob_rf_val : val[dec_rs2]));
@@ -171,7 +173,7 @@ module register_file (
     // debug end
 
     initial begin
-        for (integer i = 0; i < `REG_CNT; i = i + 1) begin
+        for (i = 0; i < `REG_CNT; i = i + 1) begin
             val[i] = `XLEN'b0;
             dep[i] = -`DEPENDENCY_WIDTH'b1;
         end
@@ -180,12 +182,12 @@ module register_file (
     always @(posedge clk) begin
         if (rdy) begin
             if (rst) begin
-                for (integer i = 0; i < `REG_CNT; i = i + 1) begin
+                for (i = 0; i < `REG_CNT; i = i + 1) begin
                     val[i] <= `XLEN'b0;
                     dep[i] <= -`DEPENDENCY_WIDTH'b1;
                 end
             end else if (flush) begin
-                for (integer i = 0; i < `REG_CNT; i = i + 1) begin
+                for (i = 0; i < `REG_CNT; i = i + 1) begin
                     dep[i] <= -`DEPENDENCY_WIDTH'b1;
                 end
             end else begin

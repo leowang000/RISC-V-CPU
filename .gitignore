@@ -5,3 +5,4 @@ testcase/
 testspace/
 *.drawio
 *.bkp
+Dockerfile

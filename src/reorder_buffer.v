@@ -70,22 +70,24 @@ module reorder_buffer (
     output reg  [ `REG_CNT_WIDTH - 1 : 0] rob_rf_rd,         // to RF
     output reg  [          `XLEN - 1 : 0] rob_rf_val         // to RF
 );
-    reg  [`INST_OP_WIDTH - 1 : 0] op                   [`ROB_SIZE - 1 : 0];
-    reg  [`REG_CNT_WIDTH - 1 : 0] rd                   [`ROB_SIZE - 1 : 0];
-    reg  [         `XLEN - 1 : 0] val                  [`ROB_SIZE - 1 : 0];
-    reg  [         `XLEN - 1 : 0] addr                 [`ROB_SIZE - 1 : 0];  // store inst: addr = store address; branch inst: addr = destination
-    reg                           ready                [`ROB_SIZE - 1 : 0];
-    reg                           jump_pred            [`ROB_SIZE - 1 : 0];
-    reg  [         `XLEN - 1 : 0] inst_addr            [`ROB_SIZE - 1 : 0];
-    reg                           c_extension          [`ROB_SIZE - 1 : 0];
+    integer                          i;
 
-    wire                          tmp_rob_empty;
-    wire                          tmp_lsb_front_store;
-    wire                          tmp_rob_front_store;
-    wire                          tmp_rob_front_branch;
-    wire                          tmp_commit;
-    wire                          tmp_flush;
-    wire [         `XLEN - 1 : 0] tmp_correct_pc;
+    reg     [`INST_OP_WIDTH - 1 : 0] op                   [`ROB_SIZE - 1 : 0];
+    reg     [`REG_CNT_WIDTH - 1 : 0] rd                   [`ROB_SIZE - 1 : 0];
+    reg     [         `XLEN - 1 : 0] val                  [`ROB_SIZE - 1 : 0];
+    reg     [         `XLEN - 1 : 0] addr                 [`ROB_SIZE - 1 : 0];  // store inst: addr = store address; branch inst: addr = destination
+    reg                              ready                [`ROB_SIZE - 1 : 0];
+    reg                              jump_pred            [`ROB_SIZE - 1 : 0];
+    reg     [         `XLEN - 1 : 0] inst_addr            [`ROB_SIZE - 1 : 0];
+    reg                              c_extension          [`ROB_SIZE - 1 : 0];
+
+    wire                             tmp_rob_empty;
+    wire                             tmp_lsb_front_store;
+    wire                             tmp_rob_front_store;
+    wire                             tmp_rob_front_branch;
+    wire                             tmp_commit;
+    wire                             tmp_flush;
+    wire    [         `XLEN - 1 : 0] tmp_correct_pc;
 
     assign rob_full             = (rob_head_id == rob_tail_id + `ROB_SIZE_WIDTH'b1);
     assign rob_Q1_ready         = (&rf_dep1 ? 1'b0 : ready[rf_dep1[`ROB_SIZE_WIDTH-1 : 0]]);
@@ -141,7 +143,7 @@ module reorder_buffer (
         rob_rf_enable    = 1'b0;
         rob_rf_rd        = `REG_CNT_WIDTH'b0;
         rob_rf_val       = `XLEN'b0;
-        for (integer i = 0; i < `ROB_SIZE; i = i + 1) begin
+        for (i = 0; i < `ROB_SIZE; i = i + 1) begin
             op[i]          = `INST_OP_WIDTH'b0;
             rd[i]          = `REG_CNT_WIDTH'b0;
             val[i]         = `XLEN'b0;
@@ -171,7 +173,7 @@ module reorder_buffer (
                 rob_rf_enable    <= 1'b0;
                 rob_rf_rd        <= `REG_CNT_WIDTH'b0;
                 rob_rf_val       <= `XLEN'b0;
-                for (integer i = 0; i < `ROB_SIZE; i = i + 1) begin
+                for (i = 0; i < `ROB_SIZE; i = i + 1) begin
                     op[i]          <= `INST_OP_WIDTH'b0;
                     rd[i]          <= `REG_CNT_WIDTH'b0;
                     val[i]         <= `XLEN'b0;

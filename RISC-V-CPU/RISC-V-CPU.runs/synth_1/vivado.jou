@@ -1,0 +1,24 @@
+#-----------------------------------------------------------
+# Vivado v2024.2 (64-bit)
+# SW Build 5239630 on Fri Nov 08 22:35:27 MST 2024
+# IP Build 5239520 on Sun Nov 10 16:12:51 MST 2024
+# SharedData Build 5239561 on Fri Nov 08 14:39:27 MST 2024
+# Start of session at: Sat Jan  4 22:06:36 2025
+# Process ID         : 37108
+# Current directory  : C:/Users/leowa/VSCodeProjects/RISC-V-CPU/RISC-V-CPU/RISC-V-CPU.runs/synth_1
+# Command line       : vivado.exe -log riscv_top.vds -product Vivado -mode batch -messageDb vivado.pb -notrace -source riscv_top.tcl
+# Log file           : C:/Users/leowa/VSCodeProjects/RISC-V-CPU/RISC-V-CPU/RISC-V-CPU.runs/synth_1/riscv_top.vds
+# Journal file       : C:/Users/leowa/VSCodeProjects/RISC-V-CPU/RISC-V-CPU/RISC-V-CPU.runs/synth_1\vivado.jou
+# Running On         : leo
+# Platform           : Windows Server 2016 or Windows 10
+# Operating System   : 22631
+# Processor Detail   : 13th Gen Intel(R) Core(TM) i5-13500H
+# CPU Frequency      : 3187 MHz
+# CPU Physical cores : 12
+# CPU Logical cores  : 16
+# Host memory        : 34071 MB
+# Swap memory        : 2147 MB
+# Total Virtual      : 36218 MB
+# Available Virtual  : 15307 MB
+#-----------------------------------------------------------
+source riscv_top.tcl -notrace

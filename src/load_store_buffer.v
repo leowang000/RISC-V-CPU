@@ -59,27 +59,29 @@ module load_store_buffer (
     output reg  [            `XLEN - 1 : 0] lsb_mem_addr,    // to Memory Controller
     output reg  [  `ROB_SIZE_WIDTH - 1 : 0] lsb_mem_id       // to Memory Controller
 );
-    reg  [   `INST_OP_WIDTH - 1 : 0] op                 [`LSB_SIZE - 1 : 0];
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] Q1                 [`LSB_SIZE - 1 : 0];
-    reg  [            `XLEN - 1 : 0] V1                 [`LSB_SIZE - 1 : 0];
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] Q2                 [`LSB_SIZE - 1 : 0];
-    reg  [            `XLEN - 1 : 0] V2                 [`LSB_SIZE - 1 : 0];
-    reg  [  `ROB_SIZE_WIDTH - 1 : 0] id                 [`LSB_SIZE - 1 : 0];
-    reg  [  `LSB_SIZE_WIDTH - 1 : 0] head_id;
-    reg  [  `LSB_SIZE_WIDTH - 1 : 0] tail_id;
+    integer                             i;
 
-    wire                             tmp_front_load;
-    wire                             tmp_new_load;
-    wire                             tmp_new_store;
-    wire                             tmp_dequeue_load;
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_Q1;
-    reg  [            `XLEN - 1 : 0] tmp_new_V1;
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_Q2;
-    reg  [            `XLEN - 1 : 0] tmp_new_V2;
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q1;
-    reg  [            `XLEN - 1 : 0] tmp_new_updated_V1;
-    reg  [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q2;
-    reg  [            `XLEN - 1 : 0] tmp_new_updated_V2;
+    reg     [   `INST_OP_WIDTH - 1 : 0] op                 [`LSB_SIZE - 1 : 0];
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] Q1                 [`LSB_SIZE - 1 : 0];
+    reg     [            `XLEN - 1 : 0] V1                 [`LSB_SIZE - 1 : 0];
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] Q2                 [`LSB_SIZE - 1 : 0];
+    reg     [            `XLEN - 1 : 0] V2                 [`LSB_SIZE - 1 : 0];
+    reg     [  `ROB_SIZE_WIDTH - 1 : 0] id                 [`LSB_SIZE - 1 : 0];
+    reg     [  `LSB_SIZE_WIDTH - 1 : 0] head_id;
+    reg     [  `LSB_SIZE_WIDTH - 1 : 0] tail_id;
+
+    wire                                tmp_front_load;
+    wire                                tmp_new_load;
+    wire                                tmp_new_store;
+    wire                                tmp_dequeue_load;
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_Q1;
+    reg     [            `XLEN - 1 : 0] tmp_new_V1;
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_Q2;
+    reg     [            `XLEN - 1 : 0] tmp_new_V2;
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q1;
+    reg     [            `XLEN - 1 : 0] tmp_new_updated_V1;
+    reg     [`DEPENDENCY_WIDTH - 1 : 0] tmp_new_updated_Q2;
+    reg     [            `XLEN - 1 : 0] tmp_new_updated_V2;
 
     assign lsb_full         = (head_id == tail_id + `LSB_SIZE_WIDTH'b1);
     assign lsb_empty        = (head_id == tail_id);
@@ -99,7 +101,7 @@ module load_store_buffer (
         lsb_mem_op     = `INST_OP_WIDTH'b0;
         lsb_mem_addr   = `XLEN'b0;
         lsb_mem_id     = `ROB_SIZE_WIDTH'b0;
-        for (integer i = 0; i < `LSB_SIZE; i = i + 1) begin
+        for (i = 0; i < `LSB_SIZE; i = i + 1) begin
             op[i] = `INST_OP_WIDTH'b0;
             Q1[i] = -`DEPENDENCY_WIDTH'b1;
             V1[i] = `XLEN'b0;
@@ -177,7 +179,7 @@ module load_store_buffer (
                 lsb_mem_op     <= `INST_OP_WIDTH'b0;
                 lsb_mem_addr   <= `XLEN'b0;
                 lsb_mem_id     <= `ROB_SIZE_WIDTH'b0;
-                for (integer i = 0; i < `LSB_SIZE; i = i + 1) begin
+                for (i = 0; i < `LSB_SIZE; i = i + 1) begin
                     op[i] <= `INST_OP_WIDTH'b0;
                     Q1[i] <= -`DEPENDENCY_WIDTH'b1;
                     V1[i] <= `XLEN'b0;
@@ -201,7 +203,7 @@ module load_store_buffer (
                     tail_id     <= tail_id + `LSB_SIZE_WIDTH'b1;
                 end
                 if (mem_data_ready) begin
-                    for (integer i = head_id; i != tail_id; i = ((i + 1) & {`LSB_SIZE_WIDTH{1'b1}})) begin
+                    for (i = head_id; i != tail_id; i = ((i + 1) & {`LSB_SIZE_WIDTH{1'b1}})) begin
                         if (Q1[i] == {1'b0, mem_id}) begin
                             Q1[i] <= -`DEPENDENCY_WIDTH'b1;
                             V1[i] <= V1[i] + mem_data;
@@ -213,7 +215,7 @@ module load_store_buffer (
                     end
                 end
                 if (alu_ready) begin
-                    for (integer i = head_id; i != tail_id; i = ((i + 1) & {`LSB_SIZE_WIDTH{1'b1}})) begin
+                    for (i = head_id; i != tail_id; i = ((i + 1) & {`LSB_SIZE_WIDTH{1'b1}})) begin
                         if (Q1[i] == {1'b0, alu_id}) begin
                             Q1[i] <= -`DEPENDENCY_WIDTH'b1;
                             V1[i] <= V1[i] + alu_res;

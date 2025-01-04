@@ -22,15 +22,17 @@ module icache (
     output wire                 icache_ready,  // to Fetcher
     output wire [`XLEN - 1 : 0] icache_inst    // to Fetcher
 );
-    reg                  valid             [`ICACHE_LINE_CNT - 1 : 0];
-    reg  [        5 : 0] tag               [`ICACHE_LINE_CNT - 1 : 0];
-    reg  [       15 : 0] data              [`ICACHE_LINE_CNT - 1 : 0];
+    integer                 i;
 
-    wire                 tmp_hit_16;
-    wire [`XLEN - 1 : 0] tmp_fet_pc;
-    wire                 tmp_hit_32;
-    wire                 tmp_c_extension;
-    wire [`XLEN - 1 : 0] tmp_mem_inst_addr;
+    reg                     valid             [`ICACHE_SET_CNT - 1 : 0];
+    reg     [        5 : 0] tag               [`ICACHE_SET_CNT - 1 : 0];
+    reg     [       15 : 0] data              [`ICACHE_SET_CNT - 1 : 0];
+
+    wire                    tmp_hit_16;
+    wire    [`XLEN - 1 : 0] tmp_fet_pc;
+    wire                    tmp_hit_32;
+    wire                    tmp_c_extension;
+    wire    [`XLEN - 1 : 0] tmp_mem_inst_addr;
 
     assign tmp_hit_16        = (fet_icache_enable && valid[fet_pc[10 : 1]] && tag[fet_pc[10 : 1]] == fet_pc[16 : 11]);
     assign tmp_fet_pc        = fet_pc + `XLEN'd2;
@@ -41,7 +43,7 @@ module icache (
     assign icache_inst       = (tmp_hit_16 && tmp_c_extension ? {16'b0, data[fet_pc[10 : 1]]} : (tmp_hit_32 && !tmp_c_extension ? {data[tmp_fet_pc[10 : 1]], data[fet_pc[10 : 1]]} : 32'b0));
 
     initial begin
-        for (integer i = 0; i < `ICACHE_LINE_CNT; i = i + 1) begin
+        for (i = 0; i < `ICACHE_SET_CNT; i = i + 1) begin
             valid[i] = 1'b0;
             tag[i]   = 6'b0;
             data[i]  = 16'b0;
@@ -51,7 +53,7 @@ module icache (
     always @(posedge clk) begin
         if (rdy) begin
             if (rst) begin
-                for (integer i = 0; i < `ICACHE_LINE_CNT; i = i + 1) begin
+                for (i = 0; i < `ICACHE_SET_CNT; i = i + 1) begin
                     valid[i] <= 1'b0;
                     tag[i]   <= 6'b0;
                     data[i]  <= 16'b0;
