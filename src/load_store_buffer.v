@@ -193,8 +193,11 @@ module load_store_buffer (
                 head_id <= `LSB_SIZE_WIDTH'b0;
                 tail_id <= `LSB_SIZE_WIDTH'b0;
             end else if (flush) begin
-                tail_id        <= head_id;
                 lsb_mem_enable <= 1'b0;
+                for (i = 0; i < `LSB_SIZE; i = i + 1) begin
+                    busy[i] <= 1'b0;
+                end
+                tail_id <= head_id;
             end else begin
                 if (!stall && dec_ready && (tmp_new_store || tmp_new_load)) begin
                     busy[tail_id] <= 1'b1;
