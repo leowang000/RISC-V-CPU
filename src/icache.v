@@ -13,7 +13,6 @@ module icache (
     input wire [`XLEN - 1 : 0] fet_pc,
 
     // from Memory Controller
-    input wire                 mem_busy,
     input wire                 mem_inst_ready,
     input wire [`XLEN - 1 : 0] mem_inst,
     input wire [`XLEN - 1 : 0] mem_inst_addr,

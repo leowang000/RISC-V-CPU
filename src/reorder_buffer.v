@@ -19,8 +19,6 @@ module reorder_buffer (
     input wire [`INST_OP_WIDTH - 1 : 0] dec_op,
     input wire                          dec_jump_pred,
     input wire [`REG_CNT_WIDTH - 1 : 0] dec_rd,
-    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs1,
-    input wire [`REG_CNT_WIDTH - 1 : 0] dec_rs2,
     input wire [         `XLEN - 1 : 0] dec_imm,
     input wire [         `XLEN - 1 : 0] dec_inst_addr,
     input wire                          dec_c_extension,

@@ -115,7 +115,6 @@ module memory_controller (
                 mem_ram_addr    <= `XLEN'b0;
                 mem_ram_wr      <= 1'b0;
                 tmp_busy        <= 1'b0;
-                tmp_mem_inst    <= `XLEN'b0;
                 tmp_load_inst   <= 1'b0;
                 tmp_inst_addr   <= `XLEN'b0;
                 tmp_load_data   <= 1'b0;
