@@ -87,7 +87,7 @@ module memory_controller (
         tmp_id                  = `ROB_SIZE_WIDTH'b0;
         tmp_state               = 2'b0;
         tmp_offset              = 2'b0;
-        tmp_load_res            = `XLEN'b0;
+        tmp_load_res            = 24'b0;
         tmp_last_offset         = 2'b0;
         tmp_last_mem_inst_ready = 1'b0;
     end
@@ -124,7 +124,7 @@ module memory_controller (
                 tmp_id          <= `ROB_SIZE_WIDTH'b0;
                 tmp_state       <= 2'b0;
                 tmp_offset      <= 2'b0;
-                tmp_load_res    <= `XLEN'b0;
+                tmp_load_res    <= 24'b0;
                 tmp_last_offset <= 2'b0;
             end else if (flush) begin  // only flush instruction load and data load
                 tmp_load_inst <= 1'b0;
@@ -149,7 +149,7 @@ module memory_controller (
                     if (fet_mem_enable || lsb_mem_enable || rob_mem_enable) begin
                         tmp_busy     <= 1'b1;
                         tmp_offset   <= 2'd0;
-                        tmp_load_res <= `XLEN'b0;
+                        tmp_load_res <= 24'b0;
                     end
                     if (fet_mem_enable) begin
                         tmp_load_inst <= 1'b1;
@@ -179,7 +179,12 @@ module memory_controller (
                     end
                 end else begin
                     if ((tmp_load_data || tmp_load_inst) && tmp_offset != 2'd0) begin
-                        tmp_load_res[tmp_offset*8-1-:8] <= ram_data;
+                        case (tmp_offset)
+                            2'd0: ;
+                            2'd1: tmp_load_res[7 : 0] <= ram_data;
+                            2'd2: tmp_load_res[15 : 8] <= ram_data;
+                            2'd3: tmp_load_res[23 : 16] <= ram_data;
+                        endcase
                     end
                     if (tmp_load_data) begin
                         if (tmp_offset == tmp_state) begin
@@ -209,7 +214,12 @@ module memory_controller (
                             tmp_store_data <= 1'b0;
                             tmp_offset     <= 2'd0;
                         end else begin
-                            mem_ram_data <= tmp_val[8*tmp_offset+15-:8];
+                            case (tmp_offset)
+                                2'd0: mem_ram_data <= tmp_val[15 : 8];
+                                2'd1: mem_ram_data <= tmp_val[23 : 16];
+                                2'd2: mem_ram_data <= tmp_val[31 : 24];
+                                2'd3: ;
+                            endcase
                             mem_ram_addr <= tmp_addr + tmp_offset + `XLEN'd1;
                             tmp_offset   <= tmp_offset + 2'd1;
                         end
