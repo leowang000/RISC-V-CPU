@@ -38,7 +38,7 @@ module register_file (
     assign rf_dep1 = (dec_rs1 == `REG_CNT_WIDTH'b0 || (rob_rf_enable && rob_rf_rd == dec_rs1 && rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[dec_rs1][`ROB_SIZE_WIDTH-1 : 0]) ? -`DEPENDENCY_WIDTH'b1 : dep[dec_rs1]);
     assign rf_dep2 = (dec_rs2 == `REG_CNT_WIDTH'b0 || (rob_rf_enable && rob_rf_rd == dec_rs2 && rob_head_id - `ROB_SIZE_WIDTH'b1 == dep[dec_rs2][`ROB_SIZE_WIDTH-1 : 0]) ? -`DEPENDENCY_WIDTH'b1 : dep[dec_rs2]);
 
-    // debug begin
+`ifdef DEBUG
     wire [`XLEN - 1 : 0] dbg_V_X00_zero;
     wire [`XLEN - 1 : 0] dbg_V_X01_ra;
     wire [`XLEN - 1 : 0] dbg_V_X02_sp;
@@ -170,7 +170,7 @@ module register_file (
     assign dbg_Q_X29_t4   = dep[29];
     assign dbg_Q_X30_t5   = dep[30];
     assign dbg_Q_X31_t6   = dep[31];
-    // debug end
+`endif
 
     initial begin
         for (i = 0; i < `REG_CNT; i = i + 1) begin

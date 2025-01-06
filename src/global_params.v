@@ -3,6 +3,8 @@
 
 // always ensure `~ == 2 ** `~_WIDTH
 
+`undef DEBUG
+
 `define XLEN 32
 `define REG_CNT 32
 `define REG_CNT_WIDTH 5

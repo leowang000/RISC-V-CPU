@@ -101,7 +101,7 @@ module reorder_buffer (
     assign tmp_flush            = (tmp_rob_front_branch ? jump_pred[rob_head_id] != val[rob_head_id][0 : 0] : op[rob_head_id] == `JALR);
     assign tmp_correct_pc       = (tmp_rob_front_branch ? (val[rob_head_id] ? addr[rob_head_id] : inst_addr[rob_head_id] + (c_extension[rob_head_id] ? `XLEN'd2 : `XLEN'd4)) : addr[rob_head_id]);
 
-    // debug begin
+`ifdef DEBUG
     wire [         `XLEN - 1 : 0] dbg_commit_inst_addr;
     wire                          dbg_front_output;
     wire [`INST_OP_WIDTH - 1 : 0] dbg_rob_head_op;
@@ -123,7 +123,7 @@ module reorder_buffer (
     assign dbg_rob_head_jump_pred   = (!tmp_rob_empty ? jump_pred[rob_head_id] : 1'b0);
     assign dbg_rob_head_inst_addr   = (!tmp_rob_empty ? inst_addr[rob_head_id] : `XLEN'b0);
     assign dbg_rob_head_c_extension = (!tmp_rob_empty ? c_extension[rob_head_id] : 1'b0);
-    // debug end
+`endif
 
     initial begin
         rob_head_id      = `ROB_SIZE_WIDTH'b0;
