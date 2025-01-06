@@ -29,7 +29,10 @@
 `define BP_SIZE_WIDTH 8
 
 // Icache
-`define ICACHE_SET_CNT 1024  // direct-mapped cache; 2 bytes in each line, 2KB in total
+`define ICACHE_SET_CNT 256  // direct-mapped cache; 2 bytes in each line, 0.5K in total
+`define TAG_LEN 8
+`define ICACHE_TAG_RANGE 16:9
+`define ICACHE_INDEX_RANGE 8:1
 
 // LSB
 `define LSB_SIZE 16  // capacity = 15
