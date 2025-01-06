@@ -31,23 +31,23 @@
 `define BP_SIZE_WIDTH 8
 
 // Icache
-`define ICACHE_SET_CNT 256  // direct-mapped cache; 2 bytes in each line, 0.5KB in total
-`define TAG_LEN 8
-`define ICACHE_TAG_RANGE 16:9
-`define ICACHE_INDEX_RANGE 8:1
+`define ICACHE_SET_CNT 128  // direct-mapped cache; 2 bytes in each line, 256B in total
+`define TAG_LEN 9
+`define ICACHE_TAG_RANGE 16:8
+`define ICACHE_INDEX_RANGE 7:1
 
 // LSB
-`define LSB_SIZE 16  // capacity = 15
-`define LSB_SIZE_WIDTH 4
+`define LSB_SIZE 8  // capacity = 7
+`define LSB_SIZE_WIDTH 3
 
 // ROB
-`define ROB_SIZE 32  // capacity = 31
-`define ROB_SIZE_WIDTH 5
-`define DEPENDENCY_WIDTH 6  // -1 for no dependency; always ensure `DEPENDENCY_WIDTH == `ROB_SIZE_WIDTH + 1
+`define ROB_SIZE 16  // capacity = 15
+`define ROB_SIZE_WIDTH 4
+`define DEPENDENCY_WIDTH 5  // -1 for no dependency; always ensure `DEPENDENCY_WIDTH == `ROB_SIZE_WIDTH + 1
 
 // RS
-`define RS_SIZE 16  // capacity = 16
-`define RS_SIZE_WIDTH 4
+`define RS_SIZE 8  // capacity = 8
+`define RS_SIZE_WIDTH 3
 
 // Decoder
 `define INST_OP_WIDTH 6
