@@ -24,8 +24,8 @@ module branch_predictor (
     integer                 i;
 
     reg     [        1 : 0] predictor       [`BP_SIZE - 1 : 0];
-    reg     [`XLEN - 1 : 0] total_counter   [`BP_SIZE - 1 : 0];
-    reg     [`XLEN - 1 : 0] correct_counter [`BP_SIZE - 1 : 0];
+    // reg     [`XLEN - 1 : 0] total_counter   [`BP_SIZE - 1 : 0];
+    // reg     [`XLEN - 1 : 0] correct_counter [`BP_SIZE - 1 : 0];
 
     reg     [`XLEN - 1 : 0] tmp_total_sum;
     reg     [`XLEN - 1 : 0] tmp_correct_sum;
@@ -37,34 +37,34 @@ module branch_predictor (
     initial begin
         for (i = 0; i < `BP_SIZE; i = i + 1) begin
             predictor[i]       = 2'b01;
-            total_counter[i]   = `XLEN'b0;
-            correct_counter[i] = `XLEN'b0;
+            // total_counter[i]   = `XLEN'b0;
+            // correct_counter[i] = `XLEN'b0;
         end
         tmp_total_sum   = `XLEN'b0;
         tmp_correct_sum = `XLEN'b0;
     end
 
-    always @(*) begin
-        tmp_total_sum = `XLEN'b0;
-        for (i = 0; i < `BP_SIZE; i = i + 1) begin
-            tmp_total_sum = tmp_total_sum + total_counter[i];
-        end
-    end
+    // always @(*) begin
+    //     tmp_total_sum = `XLEN'b0;
+    //     for (i = 0; i < `BP_SIZE; i = i + 1) begin
+    //         tmp_total_sum = tmp_total_sum + total_counter[i];
+    //     end
+    // end
 
-    always @(*) begin
-        tmp_correct_sum = `XLEN'b0;
-        for (i = 0; i < `BP_SIZE; i = i + 1) begin
-            tmp_correct_sum = tmp_correct_sum + correct_counter[i];
-        end
-    end
+    // always @(*) begin
+    //     tmp_correct_sum = `XLEN'b0;
+    //     for (i = 0; i < `BP_SIZE; i = i + 1) begin
+    //         tmp_correct_sum = tmp_correct_sum + correct_counter[i];
+    //     end
+    // end
 
     always @(posedge clk) begin
         if (rdy) begin
             if (rst) begin
                 for (i = 0; i < `BP_SIZE; i = i + 1) begin
                     predictor[i]       <= 2'b01;
-                    total_counter[i]   <= `XLEN'b0;
-                    correct_counter[i] <= `XLEN'b0;
+                    // total_counter[i]   <= `XLEN'b0;
+                    // correct_counter[i] <= `XLEN'b0;
                 end
             end else if (!flush && rob_bp_enable) begin
                 if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] != 2'b11 && rob_bp_jump) begin
@@ -73,8 +73,8 @@ module branch_predictor (
                 if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] != 2'b00 && !rob_bp_jump) begin
                     predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] - 2'b01;
                 end
-                total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]]   <= total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] + `XLEN'b1;
-                correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] <= correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] + (rob_bp_correct ? `XLEN'b1 : `XLEN'b0);
+                // total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]]   <= total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] + `XLEN'b1;
+                // correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] <= correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] + (rob_bp_correct ? `XLEN'b1 : `XLEN'b0);
             end
         end
     end
