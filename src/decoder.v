@@ -51,18 +51,18 @@ module decoder (
     end
 
     always @(posedge clk) begin
-        if (rdy) begin
-            if (rst) begin
-                dec_ready       <= 1'b0;
-                dec_op          <= `INST_OP_WIDTH'b0;
-                dec_jump_pred   <= 1'b0;
-                dec_rd          <= `REG_CNT_WIDTH'b0;
-                dec_rs1         <= `REG_CNT_WIDTH'b0;
-                dec_rs2         <= `REG_CNT_WIDTH'b0;
-                dec_imm         <= `XLEN'b0;
-                dec_inst_addr   <= `XLEN'b0;
-                dec_c_extension <= 1'b0;
-            end else if (flush) begin
+        if (rst) begin
+            dec_ready       <= 1'b0;
+            dec_op          <= `INST_OP_WIDTH'b0;
+            dec_jump_pred   <= 1'b0;
+            dec_rd          <= `REG_CNT_WIDTH'b0;
+            dec_rs1         <= `REG_CNT_WIDTH'b0;
+            dec_rs2         <= `REG_CNT_WIDTH'b0;
+            dec_imm         <= `XLEN'b0;
+            dec_inst_addr   <= `XLEN'b0;
+            dec_c_extension <= 1'b0;
+        end else if (rdy) begin
+            if (flush) begin
                 dec_ready <= 1'b0;
             end else if (!tmp_stall) begin
                 if (!fet_ready) begin

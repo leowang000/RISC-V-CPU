@@ -45,12 +45,12 @@ module alu (
     endfunction
 
     always @(posedge clk) begin
-        if (rdy) begin
-            if (rst) begin
-                alu_ready <= 1'b0;
-                alu_res   <= `XLEN'b0;
-                alu_id    <= `ROB_SIZE_WIDTH'b0;
-            end else if (flush || !rs_ready) begin
+        if (rst) begin
+            alu_ready <= 1'b0;
+            alu_res   <= `XLEN'b0;
+            alu_id    <= `ROB_SIZE_WIDTH'b0;
+        end else if (rdy) begin
+            if (flush || !rs_ready) begin
                 alu_ready <= 1'b0;
             end else begin
                 alu_ready <= 1'b1;

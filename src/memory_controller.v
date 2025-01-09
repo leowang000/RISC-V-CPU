@@ -81,28 +81,28 @@ module memory_controller (
     end
 
     always @(posedge clk) begin
-        if (rdy) begin
-            if (rst) begin
-                mem_inst_ready  <= 1'b0;
-                mem_inst_addr   <= `XLEN'b0;
-                mem_data_ready  <= 1'b0;
-                mem_id          <= `ROB_SIZE_WIDTH'b0;
-                mem_ram_data    <= 8'b0;
-                mem_ram_addr    <= `XLEN'b0;
-                mem_ram_wr      <= 1'b0;
-                tmp_busy        <= 1'b0;
-                tmp_load_inst   <= 1'b0;
-                tmp_inst_addr   <= `XLEN'b0;
-                tmp_load_data   <= 1'b0;
-                tmp_store_data  <= 1'b0;
-                tmp_addr        <= `XLEN'b0;
-                tmp_val         <= `XLEN'b0;
-                tmp_id          <= `ROB_SIZE_WIDTH'b0;
-                tmp_state       <= 2'b0;
-                tmp_offset      <= 2'b0;
-                tmp_load_res    <= 24'b0;
-                tmp_last_offset <= 2'b0;
-            end else if (flush) begin  // only flush instruction load and data load
+        if (rst) begin
+            mem_inst_ready  <= 1'b0;
+            mem_inst_addr   <= `XLEN'b0;
+            mem_data_ready  <= 1'b0;
+            mem_id          <= `ROB_SIZE_WIDTH'b0;
+            mem_ram_data    <= 8'b0;
+            mem_ram_addr    <= `XLEN'b0;
+            mem_ram_wr      <= 1'b0;
+            tmp_busy        <= 1'b0;
+            tmp_load_inst   <= 1'b0;
+            tmp_inst_addr   <= `XLEN'b0;
+            tmp_load_data   <= 1'b0;
+            tmp_store_data  <= 1'b0;
+            tmp_addr        <= `XLEN'b0;
+            tmp_val         <= `XLEN'b0;
+            tmp_id          <= `ROB_SIZE_WIDTH'b0;
+            tmp_state       <= 2'b0;
+            tmp_offset      <= 2'b0;
+            tmp_load_res    <= 24'b0;
+            tmp_last_offset <= 2'b0;
+        end else if (rdy) begin
+            if (flush) begin  // only flush instruction load and data load
                 tmp_load_inst <= 1'b0;
                 if (!tmp_store_data) begin
                     mem_inst_ready <= 1'b0;

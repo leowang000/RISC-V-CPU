@@ -144,24 +144,24 @@ module load_store_buffer (
     end
 
     always @(posedge clk) begin
-        if (rdy) begin
-            if (rst) begin
-                lsb_mem_enable <= 1'b0;
-                lsb_mem_op     <= `INST_OP_WIDTH'b0;
-                lsb_mem_addr   <= `XLEN'b0;
-                lsb_mem_id     <= `ROB_SIZE_WIDTH'b0;
-                for (i = 0; i < `LSB_SIZE; i = i + 1) begin
-                    busy[i] <= 1'b0;
-                    op[i]   <= `INST_OP_WIDTH'b0;
-                    Q1[i]   <= -`DEPENDENCY_WIDTH'b1;
-                    V1[i]   <= `XLEN'b0;
-                    Q2[i]   <= -`DEPENDENCY_WIDTH'b1;
-                    V2[i]   <= `XLEN'b0;
-                    id[i]   <= `ROB_SIZE_WIDTH'b0;
-                end
-                head_id <= `LSB_SIZE_WIDTH'b0;
-                tail_id <= `LSB_SIZE_WIDTH'b0;
-            end else if (flush) begin
+        if (rst) begin
+            lsb_mem_enable <= 1'b0;
+            lsb_mem_op     <= `INST_OP_WIDTH'b0;
+            lsb_mem_addr   <= `XLEN'b0;
+            lsb_mem_id     <= `ROB_SIZE_WIDTH'b0;
+            for (i = 0; i < `LSB_SIZE; i = i + 1) begin
+                busy[i] <= 1'b0;
+                op[i]   <= `INST_OP_WIDTH'b0;
+                Q1[i]   <= -`DEPENDENCY_WIDTH'b1;
+                V1[i]   <= `XLEN'b0;
+                Q2[i]   <= -`DEPENDENCY_WIDTH'b1;
+                V2[i]   <= `XLEN'b0;
+                id[i]   <= `ROB_SIZE_WIDTH'b0;
+            end
+            head_id <= `LSB_SIZE_WIDTH'b0;
+            tail_id <= `LSB_SIZE_WIDTH'b0;
+        end else if (rdy) begin
+            if (flush) begin
                 lsb_mem_enable <= 1'b0;
                 for (i = 0; i < `LSB_SIZE; i = i + 1) begin
                     busy[i] <= 1'b0;

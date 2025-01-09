@@ -43,18 +43,18 @@ module fetcher (
     assign fet_mem_enable = (((tmp_last_inst_ready && !icache_ready) || tmp_delay_mem_enable) && tmp_mem_idle);
 
     always @(posedge clk) begin
-        if (rdy) begin
-            if (rst == 1'b1) begin  // in the first cycle after the cpu starts working, rst == 1'bx
-                fet_ready            <= 1'b0;
-                fet_inst             <= `XLEN'b0;
-                fet_inst_addr        <= `XLEN'b0;
-                fet_jump_pred        <= 1'b0;
-                fet_icache_enable    <= 1'b0;
-                fet_pc               <= `XLEN'b0;
-                tmp_work             <= 1'b0;
-                tmp_delay_mem_enable <= 1'b0;
-                tmp_last_inst_ready  <= 1'b0;
-            end else if (!tmp_work) begin
+        if (rst == 1'b1) begin  // in the first cycle after the cpu starts working, rst == 1'bx
+            fet_ready            <= 1'b0;
+            fet_inst             <= `XLEN'b0;
+            fet_inst_addr        <= `XLEN'b0;
+            fet_jump_pred        <= 1'b0;
+            fet_icache_enable    <= 1'b0;
+            fet_pc               <= `XLEN'b0;
+            tmp_work             <= 1'b0;
+            tmp_delay_mem_enable <= 1'b0;
+            tmp_last_inst_ready  <= 1'b0;
+        end else if (rdy) begin
+            if (!tmp_work) begin
                 fet_icache_enable   <= 1'b1;
                 tmp_work            <= 1'b1;
                 tmp_last_inst_ready <= 1'b1;

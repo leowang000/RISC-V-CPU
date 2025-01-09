@@ -42,23 +42,21 @@ module icache (
     assign icache_inst       = (tmp_hit_16 && tmp_c_extension ? {16'b0, data[fet_pc[`ICACHE_INDEX_RANGE]]} : (tmp_hit_32 && !tmp_c_extension ? {data[tmp_fet_pc[`ICACHE_INDEX_RANGE]], data[fet_pc[`ICACHE_INDEX_RANGE]]} : 32'b0));
 
     always @(posedge clk) begin
-        if (rdy) begin
-            if (rst) begin
-                for (i = 0; i < `ICACHE_SET_CNT; i = i + 1) begin
-                    valid[i] <= 1'b0;
-                    tag[i]   <= `TAG_LEN'b0;
-                    data[i]  <= 16'b0;
-                end
-            end else if (!flush && !stall) begin
-                if (mem_inst_ready) begin
-                    valid[mem_inst_addr[`ICACHE_INDEX_RANGE]] <= 1'b1;
-                    tag[mem_inst_addr[`ICACHE_INDEX_RANGE]]   <= mem_inst_addr[`ICACHE_TAG_RANGE];
-                    data[mem_inst_addr[`ICACHE_INDEX_RANGE]]  <= mem_inst[15 : 0];
-                    if (mem_inst[1 : 0] == 2'b11) begin
-                        valid[tmp_mem_inst_addr[`ICACHE_INDEX_RANGE]] <= 1'b1;
-                        tag[tmp_mem_inst_addr[`ICACHE_INDEX_RANGE]]   <= tmp_mem_inst_addr[`ICACHE_TAG_RANGE];
-                        data[tmp_mem_inst_addr[`ICACHE_INDEX_RANGE]]  <= mem_inst[31 : 16];
-                    end
+        if (rst) begin
+            for (i = 0; i < `ICACHE_SET_CNT; i = i + 1) begin
+                valid[i] <= 1'b0;
+                tag[i]   <= `TAG_LEN'b0;
+                data[i]  <= 16'b0;
+            end
+        end else if (rdy && !flush && !stall) begin
+            if (mem_inst_ready) begin
+                valid[mem_inst_addr[`ICACHE_INDEX_RANGE]] <= 1'b1;
+                tag[mem_inst_addr[`ICACHE_INDEX_RANGE]]   <= mem_inst_addr[`ICACHE_TAG_RANGE];
+                data[mem_inst_addr[`ICACHE_INDEX_RANGE]]  <= mem_inst[15 : 0];
+                if (mem_inst[1 : 0] == 2'b11) begin
+                    valid[tmp_mem_inst_addr[`ICACHE_INDEX_RANGE]] <= 1'b1;
+                    tag[tmp_mem_inst_addr[`ICACHE_INDEX_RANGE]]   <= tmp_mem_inst_addr[`ICACHE_TAG_RANGE];
+                    data[tmp_mem_inst_addr[`ICACHE_INDEX_RANGE]]  <= mem_inst[31 : 16];
                 end
             end
         end

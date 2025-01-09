@@ -173,13 +173,13 @@ module register_file (
 `endif
 
     always @(posedge clk) begin
-        if (rdy) begin
-            if (rst) begin
-                for (i = 0; i < `REG_CNT; i = i + 1) begin
-                    val[i] <= `XLEN'b0;
-                    dep[i] <= -`DEPENDENCY_WIDTH'b1;
-                end
-            end else if (flush) begin
+        if (rst) begin
+            for (i = 0; i < `REG_CNT; i = i + 1) begin
+                val[i] <= `XLEN'b0;
+                dep[i] <= -`DEPENDENCY_WIDTH'b1;
+            end
+        end else if (rdy) begin
+            if (flush) begin
                 for (i = 0; i < `REG_CNT; i = i + 1) begin
                     dep[i] <= -`DEPENDENCY_WIDTH'b1;
                 end

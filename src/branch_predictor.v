@@ -53,27 +53,25 @@ module branch_predictor (
 `endif
 
     always @(posedge clk) begin
-        if (rdy) begin
-            if (rst) begin
-                for (i = 0; i < `BP_SIZE; i = i + 1) begin
-                    predictor[i] <= 2'b01;
+        if (rst) begin
+            for (i = 0; i < `BP_SIZE; i = i + 1) begin
+                predictor[i] <= 2'b01;
 `ifdef DEBUG
-                    total_counter[i]   <= `XLEN'b0;
-                    correct_counter[i] <= `XLEN'b0;
-`endif
-                end
-            end else if (!flush && rob_bp_enable) begin
-                if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] != 2'b11 && rob_bp_jump) begin
-                    predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] + 2'b01;
-                end
-                if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] != 2'b00 && !rob_bp_jump) begin
-                    predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] - 2'b01;
-                end
-`ifdef DEBUG
-                total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]]   <= total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] + `XLEN'b1;
-                correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] <= correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] + (rob_bp_correct ? `XLEN'b1 : `XLEN'b0);
+                total_counter[i]   <= `XLEN'b0;
+                correct_counter[i] <= `XLEN'b0;
 `endif
             end
+        end else if (rdy && !flush && rob_bp_enable) begin
+            if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] != 2'b11 && rob_bp_jump) begin
+                predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] + 2'b01;
+            end
+            if (predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] != 2'b00 && !rob_bp_jump) begin
+                predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] <= predictor[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] - 2'b01;
+            end
+`ifdef DEBUG
+            total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]]   <= total_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] + `XLEN'b1;
+            correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] <= correct_counter[rob_bp_inst_addr[`BP_SIZE_WIDTH : 1]] + (rob_bp_correct ? `XLEN'b1 : `XLEN'b0);
+`endif
         end
     end
 endmodule

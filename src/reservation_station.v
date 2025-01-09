@@ -152,22 +152,22 @@ module reservation_station (
     end
 
     always @(posedge clk) begin
-        if (rdy) begin
-            if (rst) begin
-                rs_ready <= 1'b0;
-                rs_op    <= `ALU_OP_WIDTH'b0;
-                rs_val1  <= `XLEN'b0;
-                rs_val2  <= `XLEN'b0;
-                rs_id    <= `ROB_SIZE_WIDTH'b0;
-                for (i = 0; i < `RS_SIZE; i = i + 1) begin
-                    busy[i] <= 1'b0;
-                    Q1[i]   <= -`DEPENDENCY_WIDTH'b1;
-                    V1[i]   <= `XLEN'b0;
-                    Q2[i]   <= -`DEPENDENCY_WIDTH'b1;
-                    V2[i]   <= `XLEN'b0;
-                    id[i]   <= `ROB_SIZE_WIDTH'b0;
-                end
-            end else if (flush) begin
+        if (rst) begin
+            rs_ready <= 1'b0;
+            rs_op    <= `ALU_OP_WIDTH'b0;
+            rs_val1  <= `XLEN'b0;
+            rs_val2  <= `XLEN'b0;
+            rs_id    <= `ROB_SIZE_WIDTH'b0;
+            for (i = 0; i < `RS_SIZE; i = i + 1) begin
+                busy[i] <= 1'b0;
+                Q1[i]   <= -`DEPENDENCY_WIDTH'b1;
+                V1[i]   <= `XLEN'b0;
+                Q2[i]   <= -`DEPENDENCY_WIDTH'b1;
+                V2[i]   <= `XLEN'b0;
+                id[i]   <= `ROB_SIZE_WIDTH'b0;
+            end
+        end else if (rdy) begin
+            if (flush) begin
                 rs_ready <= 1'b0;
                 for (i = 0; i < `RS_SIZE; i = i + 1) begin
                     busy[i] <= 1'b0;
