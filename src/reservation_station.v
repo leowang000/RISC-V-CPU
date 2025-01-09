@@ -75,36 +75,6 @@ module reservation_station (
     assign tmp_inst_should_enter = (dec_op != `LUI && dec_op != `AUIPC && dec_op != `JAL && dec_op != `LB && dec_op != `LH && dec_op != `LW && dec_op != `LBU && dec_op != `LHU && dec_op != `SB && dec_op != `SH && dec_op != `SW);
     assign tmp_two_op            = (dec_op != `JALR && dec_op != `ADDI && dec_op != `SLTI && dec_op != `SLTIU && dec_op != `XORI && dec_op != `ORI && dec_op != `ANDI && dec_op != `SLLI && dec_op != `SRLI && dec_op != `SRAI);
 
-    initial begin
-        rs_full  = 1'b0;
-        rs_ready = 1'b0;
-        rs_op    = `ALU_OP_WIDTH'b0;
-        rs_val1  = `XLEN'b0;
-        rs_val2  = `XLEN'b0;
-        rs_id    = `ROB_SIZE_WIDTH'b0;
-        for (i = 0; i < `RS_SIZE; i = i + 1) begin
-            busy[i] = 1'b0;
-            Q1[i]   = -`DEPENDENCY_WIDTH'b1;
-            V1[i]   = `XLEN'b0;
-            Q2[i]   = -`DEPENDENCY_WIDTH'b1;
-            V2[i]   = `XLEN'b0;
-            id[i]   = `ROB_SIZE_WIDTH'b0;
-        end
-        tmp_insert_break_flag = 1'b0;
-        tmp_insert_id         = `RS_SIZE_WIDTH'b0;
-        tmp_remove_break_flag = 1'b0;
-        tmp_remove_id         = `RS_SIZE_WIDTH'b0;
-        tmp_should_remove     = 1'b0;
-        tmp_new_Q1            = `DEPENDENCY_WIDTH'b0;
-        tmp_new_V1            = `XLEN'b0;
-        tmp_new_Q2            = `DEPENDENCY_WIDTH'b0;
-        tmp_new_V2            = `XLEN'b0;
-        tmp_new_updated_Q1    = `DEPENDENCY_WIDTH'b0;
-        tmp_new_updated_V1    = `XLEN'b0;
-        tmp_new_updated_Q2    = `DEPENDENCY_WIDTH'b0;
-        tmp_new_updated_V2    = `XLEN'b0;
-    end
-
     always @(*) begin
         tmp_insert_id         = `RS_SIZE_WIDTH'b0;
         tmp_insert_break_flag = 1'b0;

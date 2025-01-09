@@ -172,13 +172,6 @@ module register_file (
     assign dbg_Q_X31_t6   = dep[31];
 `endif
 
-    initial begin
-        for (i = 0; i < `REG_CNT; i = i + 1) begin
-            val[i] = `XLEN'b0;
-            dep[i] = -`DEPENDENCY_WIDTH'b1;
-        end
-    end
-
     always @(posedge clk) begin
         if (rdy) begin
             if (rst) begin

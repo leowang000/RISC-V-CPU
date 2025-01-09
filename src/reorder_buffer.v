@@ -125,34 +125,6 @@ module reorder_buffer (
     assign dbg_rob_head_c_extension = (!tmp_rob_empty ? c_extension[rob_head_id] : 1'b0);
 `endif
 
-    initial begin
-        rob_head_id      = `ROB_SIZE_WIDTH'b0;
-        rob_tail_id      = `ROB_SIZE_WIDTH'b0;
-        rob_flush        = 1'b0;
-        rob_correct_pc   = `XLEN'b0;
-        rob_bp_enable    = 1'b0;
-        rob_bp_inst_addr = `XLEN'b0;
-        rob_bp_jump      = 1'b0;
-        rob_bp_correct   = 1'b0;
-        rob_mem_enable   = 1'b0;
-        rob_mem_op       = `INST_OP_WIDTH'b0;
-        rob_mem_addr     = `XLEN'b0;
-        rob_mem_val      = `XLEN'b0;
-        rob_rf_enable    = 1'b0;
-        rob_rf_rd        = `REG_CNT_WIDTH'b0;
-        rob_rf_val       = `XLEN'b0;
-        for (i = 0; i < `ROB_SIZE; i = i + 1) begin
-            op[i]          = `INST_OP_WIDTH'b0;
-            rd[i]          = `REG_CNT_WIDTH'b0;
-            val[i]         = `XLEN'b0;
-            addr[i]        = `XLEN'b0;
-            ready[i]       = 1'b0;
-            jump_pred[i]   = 1'b0;
-            inst_addr[i]   = `XLEN'b0;
-            c_extension[i] = 1'b0;
-        end
-    end
-
     always @(posedge clk) begin
         if (rdy) begin
             if (rst) begin

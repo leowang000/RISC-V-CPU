@@ -19,12 +19,6 @@ module alu (
     output reg [          `XLEN - 1 : 0] alu_res,
     output reg [`ROB_SIZE_WIDTH - 1 : 0] alu_id      // the rob id of the instruction being calculated
 );
-    initial begin
-        alu_ready = 1'b0;
-        alu_res   = `XLEN'b0;
-        alu_id    = `ROB_SIZE_WIDTH'b0;
-    end
-
     function [`XLEN - 1 : 0] calculate;
         input [`ALU_OP_WIDTH - 1 : 0] rs_op;
         input [`XLEN - 1 : 0] rs_val1;

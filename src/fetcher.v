@@ -42,18 +42,6 @@ module fetcher (
     assign tmp_mem_idle   = (!mem_fet_busy && !(mem_inst_ready && stall));
     assign fet_mem_enable = (((tmp_last_inst_ready && !icache_ready) || tmp_delay_mem_enable) && tmp_mem_idle);
 
-    initial begin
-        fet_ready            = 1'b0;
-        fet_inst             = `XLEN'b0;
-        fet_inst_addr        = `XLEN'b0;
-        fet_jump_pred        = 1'b0;
-        fet_icache_enable    = 1'b0;
-        fet_pc               = `XLEN'b0;
-        tmp_work             = 1'b0;
-        tmp_delay_mem_enable = 1'b0;
-        tmp_last_inst_ready  = 1'b0;
-    end
-
     always @(posedge clk) begin
         if (rdy) begin
             if (rst == 1'b1) begin  // in the first cycle after the cpu starts working, rst == 1'bx

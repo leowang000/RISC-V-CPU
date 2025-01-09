@@ -41,14 +41,6 @@ module icache (
     assign icache_ready      = ((tmp_hit_16 && tmp_c_extension) || (tmp_hit_32 && !tmp_c_extension));
     assign icache_inst       = (tmp_hit_16 && tmp_c_extension ? {16'b0, data[fet_pc[`ICACHE_INDEX_RANGE]]} : (tmp_hit_32 && !tmp_c_extension ? {data[tmp_fet_pc[`ICACHE_INDEX_RANGE]], data[fet_pc[`ICACHE_INDEX_RANGE]]} : 32'b0));
 
-    initial begin
-        for (i = 0; i < `ICACHE_SET_CNT; i = i + 1) begin
-            valid[i] = 1'b0;
-            tag[i]   = `TAG_LEN'b0;
-            data[i]  = 16'b0;
-        end
-    end
-
     always @(posedge clk) begin
         if (rdy) begin
             if (rst) begin

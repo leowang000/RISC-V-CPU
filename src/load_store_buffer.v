@@ -92,32 +92,6 @@ module load_store_buffer (
     assign tmp_new_store    = (dec_op == `SB || dec_op == `SH || dec_op == `SW);
     assign tmp_dequeue_load = (tmp_front_load && !mem_busy && &lsb_front_Q1 && !(lsb_front_V1 == `XLEN'h30000 && (io_buffer_full || lsb_front_id != rob_head_id)));  // lsb_front_Q1 == -1
 
-    initial begin
-        lsb_mem_enable = 1'b0;
-        lsb_mem_op     = `INST_OP_WIDTH'b0;
-        lsb_mem_addr   = `XLEN'b0;
-        lsb_mem_id     = `ROB_SIZE_WIDTH'b0;
-        for (i = 0; i < `LSB_SIZE; i = i + 1) begin
-            busy[i] = 1'b0;
-            op[i]   = `INST_OP_WIDTH'b0;
-            Q1[i]   = -`DEPENDENCY_WIDTH'b1;
-            V1[i]   = `XLEN'b0;
-            Q2[i]   = -`DEPENDENCY_WIDTH'b1;
-            V2[i]   = `XLEN'b0;
-            id[i]   = `ROB_SIZE_WIDTH'b0;
-        end
-        head_id            = `LSB_SIZE_WIDTH'b0;
-        tail_id            = `LSB_SIZE_WIDTH'b0;
-        tmp_new_Q1         = `DEPENDENCY_WIDTH'b0;
-        tmp_new_V1         = `XLEN'b0;
-        tmp_new_Q2         = `DEPENDENCY_WIDTH'b0;
-        tmp_new_V2         = `XLEN'b0;
-        tmp_new_updated_Q1 = `DEPENDENCY_WIDTH'b0;
-        tmp_new_updated_V1 = `XLEN'b0;
-        tmp_new_updated_Q2 = `DEPENDENCY_WIDTH'b0;
-        tmp_new_updated_V2 = `XLEN'b0;
-    end
-
     always @(*) begin
         if (&rf_dep1) begin  // rf_dep1 == -1
             tmp_new_Q1 = -`DEPENDENCY_WIDTH'b1;

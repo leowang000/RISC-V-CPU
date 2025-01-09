@@ -36,18 +36,6 @@ module branch_predictor (
     assign bp_corret_cnt = tmp_correct_sum;
     assign bp_total_cnt  = tmp_total_sum;
 
-    initial begin
-        for (i = 0; i < `BP_SIZE; i = i + 1) begin
-            predictor[i] = 2'b01;
-`ifdef DEBUG
-            total_counter[i]   = `XLEN'b0;
-            correct_counter[i] = `XLEN'b0;
-`endif
-        end
-        tmp_total_sum   = `XLEN'b0;
-        tmp_correct_sum = `XLEN'b0;
-    end
-
 `ifdef DEBUG
     always @(*) begin
         tmp_total_sum = `XLEN'b0;

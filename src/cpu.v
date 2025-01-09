@@ -392,4 +392,6 @@ module cpu (
         .rs_val2         (rs_val2),
         .rs_id           (rs_id)
     );
+
+    assign dbgreg_dout = fet_pc;
 endmodule

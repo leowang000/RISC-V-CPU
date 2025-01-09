@@ -38,19 +38,6 @@ module decoder (
 
     assign dec_stall = tmp_stall;
 
-    initial begin
-        dec_ready       = 1'b0;
-        dec_op          = `INST_OP_WIDTH'b0;
-        dec_jump_pred   = 1'b0;
-        dec_rd          = `REG_CNT_WIDTH'b0;
-        dec_rs1         = `REG_CNT_WIDTH'b0;
-        dec_rs2         = `REG_CNT_WIDTH'b0;
-        dec_imm         = `XLEN'b0;
-        dec_inst_addr   = `XLEN'b0;
-        dec_c_extension = 1'b0;
-        tmp_stall       = 1'b0;
-    end
-
     always @(*) begin
         if (!dec_ready) begin
             tmp_stall = 1'b0;

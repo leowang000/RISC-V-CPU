@@ -68,30 +68,6 @@ module memory_controller (
     assign mem_inst           = (mem_inst_ready ? tmp_mem_inst : `XLEN'b0);
     assign mem_data           = (mem_data_ready ? tmp_cur_load_res : `XLEN'b0);
 
-    initial begin
-        mem_inst_ready          = 1'b0;
-        mem_inst_addr           = `XLEN'b0;
-        mem_data_ready          = 1'b0;
-        mem_id                  = `ROB_SIZE_WIDTH'b0;
-        mem_ram_data            = 8'b0;
-        mem_ram_addr            = `XLEN'b0;
-        mem_ram_wr              = 1'b0;
-        tmp_busy                = 1'b0;
-        tmp_mem_inst            = `XLEN'b0;
-        tmp_load_inst           = 1'b0;
-        tmp_inst_addr           = `XLEN'b0;
-        tmp_load_data           = 1'b0;
-        tmp_store_data          = 1'b0;
-        tmp_addr                = `XLEN'b0;
-        tmp_val                 = `XLEN'b0;
-        tmp_id                  = `ROB_SIZE_WIDTH'b0;
-        tmp_state               = 2'b0;
-        tmp_offset              = 2'b0;
-        tmp_load_res            = 24'b0;
-        tmp_last_offset         = 2'b0;
-        tmp_last_mem_inst_ready = 1'b0;
-    end
-
     always @(*) begin
         if (tmp_last_mem_inst_ready) begin
             tmp_mem_inst = tmp_cur_load_res;
