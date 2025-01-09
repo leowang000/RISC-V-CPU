@@ -4,6 +4,8 @@ RISC-V-CPU/
 script/
 testcase/
 testspace/
+!testspace/fpga_judge.sh
+!testspace/judge.sh
 *.drawio
 *.bkp
 Dockerfile
