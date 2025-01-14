@@ -57,16 +57,18 @@ module cpu (
 
     // LSB
     wire                             lsb_full;
-    wire                             lsb_empty;
-    wire [   `INST_OP_WIDTH - 1 : 0] lsb_front_op;
-    wire [`DEPENDENCY_WIDTH - 1 : 0] lsb_front_Q1;
-    wire [            `XLEN - 1 : 0] lsb_front_V1;
-    wire [`DEPENDENCY_WIDTH - 1 : 0] lsb_front_Q2;
-    wire [            `XLEN - 1 : 0] lsb_front_V2;
-    wire [  `ROB_SIZE_WIDTH - 1 : 0] lsb_front_id;
+    wire [  `LSB_SIZE_WIDTH - 1 : 0] lsb_tail_id;
+    wire                             lsb_cur_empty;
+    wire [   `INST_OP_WIDTH - 1 : 0] lsb_cur_front_op;
+    wire [`DEPENDENCY_WIDTH - 1 : 0] lsb_cur_front_Q1;
+    wire [            `XLEN - 1 : 0] lsb_cur_front_V1;
+    wire [`DEPENDENCY_WIDTH - 1 : 0] lsb_cur_front_Q2;
+    wire [            `XLEN - 1 : 0] lsb_cur_front_V2;
+    wire [  `ROB_SIZE_WIDTH - 1 : 0] lsb_cur_front_id;
     wire                             lsb_mem_enable;
     wire [   `INST_OP_WIDTH - 1 : 0] lsb_mem_op;
     wire [            `XLEN - 1 : 0] lsb_mem_addr;
+    wire [            `XLEN - 1 : 0] lsb_mem_data;
     wire [  `ROB_SIZE_WIDTH - 1 : 0] lsb_mem_id;
 
     // Memory Controller
@@ -100,10 +102,8 @@ module cpu (
     wire [            `XLEN - 1 : 0] rob_bp_inst_addr;
     wire                             rob_bp_jump;
     wire                             rob_bp_correct;
-    wire                             rob_mem_enable;
-    wire [   `INST_OP_WIDTH - 1 : 0] rob_mem_op;
-    wire [            `XLEN - 1 : 0] rob_mem_addr;
-    wire [            `XLEN - 1 : 0] rob_mem_val;
+    wire                             rob_lsb_store_ready;
+    wire [  `LSB_SIZE_WIDTH - 1 : 0] rob_lsb_store_id;
     wire                             rob_rf_enable;
     wire [   `REG_CNT_WIDTH - 1 : 0] rob_rf_rd;
     wire [            `XLEN - 1 : 0] rob_rf_val;
@@ -212,45 +212,48 @@ module cpu (
     );
 
     load_store_buffer my_lsb (
-        .clk           (clk_in),
-        .rst           (rst_in),
-        .rdy           (rdy_in),
-        .flush         (flush),
-        .stall         (stall),
-        .io_buffer_full(io_buffer_full),
-        .alu_ready     (alu_ready),
-        .alu_res       (alu_res),
-        .alu_id        (alu_id),
-        .dec_ready     (dec_ready),
-        .dec_op        (dec_op),
-        .dec_imm       (dec_imm),
-        .mem_busy      (mem_busy),
-        .mem_data_ready(mem_data_ready),
-        .mem_data      (mem_data),
-        .mem_id        (mem_id),
-        .rf_val1       (rf_val1),
-        .rf_dep1       (rf_dep1),
-        .rf_val2       (rf_val2),
-        .rf_dep2       (rf_dep2),
-        .rob_mem_enable(rob_mem_enable),
-        .rob_Q1_ready  (rob_Q1_ready),
-        .rob_Q1_val    (rob_Q1_val),
-        .rob_Q2_ready  (rob_Q2_ready),
-        .rob_Q2_val    (rob_Q2_val),
-        .rob_head_id   (rob_head_id),
-        .rob_tail_id   (rob_tail_id),
-        .lsb_full      (lsb_full),
-        .lsb_empty     (lsb_empty),
-        .lsb_front_op  (lsb_front_op),
-        .lsb_front_Q1  (lsb_front_Q1),
-        .lsb_front_V1  (lsb_front_V1),
-        .lsb_front_Q2  (lsb_front_Q2),
-        .lsb_front_V2  (lsb_front_V2),
-        .lsb_front_id  (lsb_front_id),
-        .lsb_mem_enable(lsb_mem_enable),
-        .lsb_mem_op    (lsb_mem_op),
-        .lsb_mem_addr  (lsb_mem_addr),
-        .lsb_mem_id    (lsb_mem_id)
+        .clk                (clk_in),
+        .rst                (rst_in),
+        .rdy                (rdy_in),
+        .flush              (flush),
+        .stall              (stall),
+        .io_buffer_full     (io_buffer_full),
+        .alu_ready          (alu_ready),
+        .alu_res            (alu_res),
+        .alu_id             (alu_id),
+        .dec_ready          (dec_ready),
+        .dec_op             (dec_op),
+        .dec_imm            (dec_imm),
+        .mem_busy           (mem_busy),
+        .mem_data_ready     (mem_data_ready),
+        .mem_data           (mem_data),
+        .mem_id             (mem_id),
+        .rf_val1            (rf_val1),
+        .rf_dep1            (rf_dep1),
+        .rf_val2            (rf_val2),
+        .rf_dep2            (rf_dep2),
+        .rob_lsb_store_ready(rob_lsb_store_ready),
+        .rob_lsb_store_id   (rob_lsb_store_id),
+        .rob_Q1_ready       (rob_Q1_ready),
+        .rob_Q1_val         (rob_Q1_val),
+        .rob_Q2_ready       (rob_Q2_ready),
+        .rob_Q2_val         (rob_Q2_val),
+        .rob_head_id        (rob_head_id),
+        .rob_tail_id        (rob_tail_id),
+        .lsb_full           (lsb_full),
+        .lsb_tail_id        (lsb_tail_id),
+        .lsb_cur_empty      (lsb_cur_empty),
+        .lsb_cur_front_op   (lsb_cur_front_op),
+        .lsb_cur_front_Q1   (lsb_cur_front_Q1),
+        .lsb_cur_front_V1   (lsb_cur_front_V1),
+        .lsb_cur_front_Q2   (lsb_cur_front_Q2),
+        .lsb_cur_front_V2   (lsb_cur_front_V2),
+        .lsb_cur_front_id   (lsb_cur_front_id),
+        .lsb_mem_enable     (lsb_mem_enable),
+        .lsb_mem_op         (lsb_mem_op),
+        .lsb_mem_addr       (lsb_mem_addr),
+        .lsb_mem_data       (lsb_mem_data),
+        .lsb_mem_id         (lsb_mem_id)
     );
 
     memory_controller my_mem (
@@ -264,12 +267,9 @@ module cpu (
         .lsb_mem_enable(lsb_mem_enable),
         .lsb_mem_op    (lsb_mem_op),
         .lsb_mem_addr  (lsb_mem_addr),
+        .lsb_mem_data  (lsb_mem_data),
         .lsb_mem_id    (lsb_mem_id),
         .ram_data      (mem_din),
-        .rob_mem_enable(rob_mem_enable),
-        .rob_mem_op    (rob_mem_op),
-        .rob_mem_addr  (rob_mem_addr),
-        .rob_mem_val   (rob_mem_val),
         .mem_busy      (mem_busy),
         .mem_fet_busy  (mem_fet_busy),
         .mem_inst      (mem_inst),
@@ -306,57 +306,56 @@ module cpu (
     );
 
     reorder_buffer my_rob (
-        .clk             (clk_in),
-        .rst             (rst_in),
-        .rdy             (rdy_in),
-        .flush           (flush),
-        .stall           (stall),
-        .io_buffer_full  (io_buffer_full),
-        .alu_ready       (alu_ready),
-        .alu_res         (alu_res),
-        .alu_id          (alu_id),
-        .dec_ready       (dec_ready),
-        .dec_op          (dec_op),
-        .dec_jump_pred   (dec_jump_pred),
-        .dec_rd          (dec_rd),
-        .dec_imm         (dec_imm),
-        .dec_inst_addr   (dec_inst_addr),
-        .dec_c_extension (dec_c_extension),
-        .lsb_empty       (lsb_empty),
-        .lsb_front_op    (lsb_front_op),
-        .lsb_front_id    (lsb_front_id),
-        .lsb_front_Q1    (lsb_front_Q1),
-        .lsb_front_V1    (lsb_front_V1),
-        .lsb_front_Q2    (lsb_front_Q2),
-        .lsb_front_V2    (lsb_front_V2),
-        .mem_busy        (mem_busy),
-        .mem_data_ready  (mem_data_ready),
-        .mem_data        (mem_data),
-        .mem_id          (mem_id),
-        .rf_dep1         (rf_dep1),
-        .rf_dep2         (rf_dep2),
-        .rs_remove_id    (rs_remove_id),
-        .rob_full        (rob_full),
-        .rob_Q1_ready    (rob_Q1_ready),
-        .rob_Q1_val      (rob_Q1_val),
-        .rob_Q2_ready    (rob_Q2_ready),
-        .rob_Q2_val      (rob_Q2_val),
-        .rob_rs_remove_op(rob_rs_remove_op),
-        .rob_head_id     (rob_head_id),
-        .rob_tail_id     (rob_tail_id),
-        .rob_flush       (rob_flush),
-        .rob_correct_pc  (rob_correct_pc),
-        .rob_bp_enable   (rob_bp_enable),
-        .rob_bp_inst_addr(rob_bp_inst_addr),
-        .rob_bp_jump     (rob_bp_jump),
-        .rob_bp_correct  (rob_bp_correct),
-        .rob_mem_enable  (rob_mem_enable),
-        .rob_mem_op      (rob_mem_op),
-        .rob_mem_addr    (rob_mem_addr),
-        .rob_mem_val     (rob_mem_val),
-        .rob_rf_enable   (rob_rf_enable),
-        .rob_rf_rd       (rob_rf_rd),
-        .rob_rf_val      (rob_rf_val)
+        .clk                (clk_in),
+        .rst                (rst_in),
+        .rdy                (rdy_in),
+        .flush              (flush),
+        .stall              (stall),
+        .io_buffer_full     (io_buffer_full),
+        .alu_ready          (alu_ready),
+        .alu_res            (alu_res),
+        .alu_id             (alu_id),
+        .dec_ready          (dec_ready),
+        .dec_op             (dec_op),
+        .dec_jump_pred      (dec_jump_pred),
+        .dec_rd             (dec_rd),
+        .dec_imm            (dec_imm),
+        .dec_inst_addr      (dec_inst_addr),
+        .dec_c_extension    (dec_c_extension),
+        .lsb_tail_id        (lsb_tail_id),
+        .lsb_cur_empty      (lsb_cur_empty),
+        .lsb_cur_front_op   (lsb_cur_front_op),
+        .lsb_cur_front_id   (lsb_cur_front_id),
+        .lsb_cur_front_Q1   (lsb_cur_front_Q1),
+        .lsb_cur_front_V1   (lsb_cur_front_V1),
+        .lsb_cur_front_Q2   (lsb_cur_front_Q2),
+        .lsb_cur_front_V2   (lsb_cur_front_V2),
+        .mem_busy           (mem_busy),
+        .mem_data_ready     (mem_data_ready),
+        .mem_data           (mem_data),
+        .mem_id             (mem_id),
+        .rf_dep1            (rf_dep1),
+        .rf_dep2            (rf_dep2),
+        .rs_remove_id       (rs_remove_id),
+        .rob_full           (rob_full),
+        .rob_Q1_ready       (rob_Q1_ready),
+        .rob_Q1_val         (rob_Q1_val),
+        .rob_Q2_ready       (rob_Q2_ready),
+        .rob_Q2_val         (rob_Q2_val),
+        .rob_rs_remove_op   (rob_rs_remove_op),
+        .rob_head_id        (rob_head_id),
+        .rob_tail_id        (rob_tail_id),
+        .rob_flush          (rob_flush),
+        .rob_correct_pc     (rob_correct_pc),
+        .rob_bp_enable      (rob_bp_enable),
+        .rob_bp_inst_addr   (rob_bp_inst_addr),
+        .rob_bp_jump        (rob_bp_jump),
+        .rob_bp_correct     (rob_bp_correct),
+        .rob_lsb_store_ready(rob_lsb_store_ready),
+        .rob_lsb_store_id   (rob_lsb_store_id),
+        .rob_rf_enable      (rob_rf_enable),
+        .rob_rf_rd          (rob_rf_rd),
+        .rob_rf_val         (rob_rf_val)
     );
 
     reservation_station my_rs (
