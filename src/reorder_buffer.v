@@ -7,7 +7,6 @@ module reorder_buffer (
     input wire rdy,
     input wire flush,
     input wire stall,
-    input wire io_buffer_full,
 
     // from ALU
     input wire                           alu_ready,

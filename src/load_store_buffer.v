@@ -7,7 +7,6 @@ module load_store_buffer (
     input wire rdy,
     input wire flush,
     input wire stall,
-    input wire io_buffer_full,
 
     // from ALU
     input wire                           alu_ready,
@@ -101,8 +100,8 @@ module load_store_buffer (
     assign tmp_front_store   = (!tmp_lsb_empty && (op[head_id] == `SB || op[head_id] == `SH || op[head_id] == `SW));
     assign tmp_new_load      = (dec_op == `LB || dec_op == `LH || dec_op == `LW || dec_op == `LBU || dec_op == `LHU);
     assign tmp_new_store     = (dec_op == `SB || dec_op == `SH || dec_op == `SW);
-    assign tmp_dequeue_load  = (tmp_front_load && !mem_busy && &Q1[head_id] && !((V1[head_id] == `XLEN'h30000 || V1[head_id] == `XLEN'h30004) && (io_buffer_full || id[head_id] != rob_head_id)));  // Q1[head_id] == -1
-    assign tmp_dequeue_store = (tmp_front_store && !mem_busy && store_ready[head_id] && !((V1[head_id] == `XLEN'h30000 || V1[head_id] == `XLEN'h30004) && io_buffer_full));
+    assign tmp_dequeue_load  = (tmp_front_load && !mem_busy && &Q1[head_id] && !((V1[head_id] == `XLEN'h30000 || V1[head_id] == `XLEN'h30004) && id[head_id] != rob_head_id));  // Q1[head_id] == -1
+    assign tmp_dequeue_store = (tmp_front_store && !mem_busy && store_ready[head_id]);
 
 `ifdef DEBUG
     wire dbg_store_ready_0;
