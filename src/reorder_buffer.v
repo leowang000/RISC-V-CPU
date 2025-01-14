@@ -33,7 +33,6 @@ module reorder_buffer (
     input wire [            `XLEN - 1 : 0] lsb_cur_front_V2,
 
     // from Memory Controller
-    input wire                           mem_busy,
     input wire                           mem_data_ready,
     input wire [          `XLEN - 1 : 0] mem_data,
     input wire [`ROB_SIZE_WIDTH - 1 : 0] mem_id,

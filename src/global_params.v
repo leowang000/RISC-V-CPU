@@ -3,7 +3,7 @@
 
 // always ensure `~ == 2 ** `~_WIDTH
 
-`define DEBUG
+`undef DEBUG
 
 `define XLEN 32
 `define REG_CNT 32

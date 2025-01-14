@@ -329,7 +329,6 @@ module cpu (
         .lsb_cur_front_V1   (lsb_cur_front_V1),
         .lsb_cur_front_Q2   (lsb_cur_front_Q2),
         .lsb_cur_front_V2   (lsb_cur_front_V2),
-        .mem_busy           (mem_busy),
         .mem_data_ready     (mem_data_ready),
         .mem_data           (mem_data),
         .mem_id             (mem_id),

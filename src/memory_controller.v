@@ -54,6 +54,7 @@ module memory_controller (
     reg  [          `XLEN - 1 : 0] tmp_addr;
     reg  [          `XLEN - 1 : 0] tmp_data;
     reg  [`ROB_SIZE_WIDTH - 1 : 0] tmp_id;
+    reg                            tmp_unsigned;
     reg  [                  1 : 0] tmp_state;
     reg  [                  1 : 0] tmp_offset;
     reg  [                 23 : 0] tmp_load_res;
@@ -62,10 +63,10 @@ module memory_controller (
     reg                            tmp_io_delay;
 
     assign tmp_io               = (lsb_mem_enable && (lsb_mem_addr == `XLEN'h30000 || lsb_mem_addr == `XLEN'h30004));
-    assign tmp_lsb_store_enable = lsb_mem_enable && (lsb_mem_op == `SB || lsb_mem_op == `SH || lsb_mem_op == `SW);
-    assign tmp_lsb_load_enable  = lsb_mem_enable && !tmp_lsb_store_enable;
+    assign tmp_lsb_store_enable = (lsb_mem_enable && (lsb_mem_op == `SB || lsb_mem_op == `SH || lsb_mem_op == `SW));
+    assign tmp_lsb_load_enable  = (lsb_mem_enable && !tmp_lsb_store_enable);
     assign tmp_mem_inst_ready   = (!tmp_load_data && !tmp_store_data && (((tmp_offset == STATE_HALF && ram_data[1 : 0] != 2'b11) || (tmp_offset == STATE_WORD && tmp_load_res[1 : 0] == 2'b11))));
-    assign tmp_cur_load_res     = (tmp_last_offset == STATE_BYTE ? {24'b0, ram_data} : (tmp_last_offset == STATE_HALF ? {16'b0, ram_data, tmp_load_res[7 : 0]} : {ram_data, tmp_load_res}));
+    assign tmp_cur_load_res     = (tmp_last_offset == STATE_BYTE ? {tmp_unsigned ? 24'b0 : {24{ram_data[7]}}, ram_data} : (tmp_last_offset == STATE_HALF ? {tmp_unsigned ? 16'b0 : {16{ram_data[7]}}, ram_data, tmp_load_res[7 : 0]} : {ram_data, tmp_load_res}));
     assign mem_busy             = (fet_mem_enable || lsb_mem_enable || tmp_busy);
     assign mem_fet_busy         = tmp_busy;
     assign mem_inst             = (mem_inst_ready ? tmp_mem_inst : `XLEN'b0);
@@ -100,6 +101,7 @@ module memory_controller (
             tmp_addr        <= `XLEN'b0;
             tmp_data        <= `XLEN'b0;
             tmp_id          <= `ROB_SIZE_WIDTH'b0;
+            tmp_unsigned    <= 1'b0;
             tmp_state       <= 2'b0;
             tmp_offset      <= 2'b0;
             tmp_load_res    <= 24'b0;
@@ -142,6 +144,7 @@ module memory_controller (
                         tmp_load_data <= 1'b1;
                         tmp_addr      <= lsb_mem_addr;
                         tmp_id        <= lsb_mem_id;
+                        tmp_unsigned  <= (lsb_mem_op == `LBU || lsb_mem_op == `LHU);
                         tmp_state     <= (lsb_mem_op == `LW ? STATE_WORD : (lsb_mem_op == `LH || lsb_mem_op == `LHU ? STATE_HALF : STATE_BYTE));
                     end else if (tmp_lsb_store_enable) begin
                         tmp_store_data <= 1'b1;
