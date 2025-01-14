@@ -182,7 +182,7 @@ module memory_controller (
                 end else if (tmp_store_data) begin
                     if (tmp_offset == tmp_state) begin
                         mem_ram_wr <= 1'b0;
-                        if (tmp_load_inst) begin
+                        if (!flush && tmp_load_inst) begin
                             mem_ram_addr <= tmp_inst_addr;
                         end else begin
                             mem_ram_addr <= `XLEN'b0;
