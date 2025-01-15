@@ -31,15 +31,19 @@ module icache (
     wire    [   `XLEN - 1 : 0] tmp_fet_pc;
     wire                       tmp_hit_32;
     wire                       tmp_c_extension;
+    wire                       tmp_hit_ic;
+    wire                       tmp_hit_i;
     wire    [   `XLEN - 1 : 0] tmp_mem_inst_addr;
 
-    assign tmp_hit_16        = (fet_icache_enable && valid[fet_pc[`ICACHE_INDEX_RANGE]] && tag[fet_pc[`ICACHE_INDEX_RANGE]] == fet_pc[`ICACHE_TAG_RANGE]);
+    assign tmp_hit_16        = ((fet_icache_enable && valid[fet_pc[`ICACHE_INDEX_RANGE]]) && tag[fet_pc[`ICACHE_INDEX_RANGE]] == fet_pc[`ICACHE_TAG_RANGE]);
     assign tmp_fet_pc        = fet_pc + `XLEN'd2;
-    assign tmp_hit_32        = (tmp_hit_16 && valid[tmp_fet_pc[`ICACHE_INDEX_RANGE]] && tag[tmp_fet_pc[`ICACHE_INDEX_RANGE]] == tmp_fet_pc[`ICACHE_TAG_RANGE]);
+    assign tmp_hit_32        = (tmp_hit_16 && (valid[tmp_fet_pc[`ICACHE_INDEX_RANGE]] && tag[tmp_fet_pc[`ICACHE_INDEX_RANGE]] == tmp_fet_pc[`ICACHE_TAG_RANGE]));
     assign tmp_c_extension   = (data[fet_pc[`ICACHE_INDEX_RANGE]][1 : 0] != 2'b11);
+    assign tmp_hit_ic        = tmp_hit_16 && tmp_c_extension;
+    assign tmp_hit_i         = tmp_hit_32 && !tmp_c_extension;
     assign tmp_mem_inst_addr = mem_inst_addr + `XLEN'd2;
-    assign icache_ready      = ((tmp_hit_16 && tmp_c_extension) || (tmp_hit_32 && !tmp_c_extension));
-    assign icache_inst       = (tmp_hit_16 && tmp_c_extension ? {16'b0, data[fet_pc[`ICACHE_INDEX_RANGE]]} : (tmp_hit_32 && !tmp_c_extension ? {data[tmp_fet_pc[`ICACHE_INDEX_RANGE]], data[fet_pc[`ICACHE_INDEX_RANGE]]} : 32'b0));
+    assign icache_ready      = (tmp_hit_ic || tmp_hit_i);
+    assign icache_inst       = (tmp_hit_ic ? {16'b0, data[fet_pc[`ICACHE_INDEX_RANGE]]} : (tmp_hit_i ? {data[tmp_fet_pc[`ICACHE_INDEX_RANGE]], data[fet_pc[`ICACHE_INDEX_RANGE]]} : 32'b0));
 
     always @(posedge clk) begin
         if (rst) begin

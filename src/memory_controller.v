@@ -244,6 +244,12 @@ module memory_controller (
                     mem_ram_wr   <= 1'b1;
                 end
             end
+        end else begin
+            if (tmp_io && io_buffer_full) begin
+                mem_ram_data <= 8'b0;
+                mem_ram_addr <= `XLEN'b0;
+                mem_ram_wr   <= 1'b0;
+            end
         end
     end
 endmodule

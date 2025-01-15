@@ -156,7 +156,15 @@ module riscv_top #(
     // The following code is for debugging purposes
     //
 
+    reg tmp_dbg;
+
+    always @(*) begin
+        if (cpu_io_buffer_full && (cpu_mem_a == 32'h30000 || cpu_mem_a == 32'h30004)) begin
+            tmp_dbg = 1'b1;
+        end
+    end
+
     // indicates debug break
-    assign led = {hci_active, cpu_dbgreg_dout[14 : 0]};
+    assign led = {hci_active, tmp_dbg, cpu_dbgreg_dout[13 : 0]};
 
 endmodule
